@@ -6,14 +6,26 @@ export function Add() {
   return window['go']['main']['App']['Add']();
 }
 
+export function AttemptSetForeground(arg1, arg2) {
+  return window['go']['main']['App']['AttemptSetForeground'](arg1, arg2);
+}
+
 export function GetDofusWindows() {
   return window['go']['main']['App']['GetDofusWindows']();
 }
 
-export function SetWindowForeground(arg1) {
-  return window['go']['main']['App']['SetWindowForeground'](arg1);
+export function SetForegroundWindowEx(arg1, arg2) {
+  return window['go']['main']['App']['SetForegroundWindowEx'](arg1, arg2);
 }
 
 export function UpdateDofusWindows() {
   return window['go']['main']['App']['UpdateDofusWindows']();
+}
+
+export function UpdateDofusWindowsOrder(arg1) {
+  return window['go']['main']['App']['UpdateDofusWindowsOrder'](arg1);
+}
+
+export function WinActivate(arg1) {
+  return window['go']['main']['App']['WinActivate'](arg1);
 }

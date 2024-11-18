@@ -7,8 +7,11 @@ toolchain go1.23.3
 require (
 	github.com/go-vgo/robotgo v0.110.5
 	github.com/gonutz/w32/v2 v2.11.1
+	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/robotn/gohook v0.41.0
 	github.com/wailsapp/wails/v2 v2.9.2
+	golang.org/x/sys v0.27.0
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
@@ -29,7 +32,6 @@ require (
 	github.com/leaanthony/slicer v1.6.0 // indirect
 	github.com/leaanthony/u v1.1.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 // indirect
-	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/otiai10/gosseract v2.2.1+incompatible // indirect
@@ -59,7 +61,6 @@ require (
 	golang.org/x/exp v0.0.0-20241004190924-225e2abe05e6 // indirect
 	golang.org/x/image v0.21.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 )
 

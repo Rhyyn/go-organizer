@@ -5,30 +5,23 @@ import "./App.css";
 import { SetWindowForeground } from "../wailsjs/go/main/App";
 import { GetDofusWindows } from "../wailsjs/go/main/App";
 import { UpdateDofusWindows } from "../wailsjs/go/main/App";
+import { UpdateDofusWindowsOrder } from "../wailsjs/go/main/App";
 
 function App() {
     const [isFirst, setIsFirst] = useState(true);
-    // const [resultText, setResultText] = useState(
-    //     "Please enter your name below 👇"
-    // );
-    // const [name, setName] = useState("");
-    // const updateName = (e) => setName(e.target.value);
-    // const updateResultText = (result) => setResultText(result);
-
-    // function greet() {
-    //     Greet(name).then(updateResultText);
-    // }
-
-    // function call() {
-    //     TestReturn().then((result) => {
-    //         setResultText(result);
-    //     });
-    // }
 
     function getDofusWindows() {
         UpdateDofusWindows().then((result) => {
-            setDofusWindows(result);
+            const sortedList = [...result].sort((a, b) => a.Order - b.Order);
+            setDofusWindows(sortedList);
         });
+    }
+
+    function saveOrder() {
+        UpdateDofusWindowsOrder(dofusWindows);
+        GetDofusWindows().then(updateWindows);
+        console.log("updating order..");
+        console.log(dofusWindows);
     }
 
     const moveUp = (index) => {
@@ -38,6 +31,7 @@ function App() {
             newList[index] = newList[index - 1];
             newList[index - 1] = temp;
             setDofusWindows(newList);
+            console.log(newList);
         }
     };
 
@@ -48,6 +42,7 @@ function App() {
             newList[index] = newList[index + 1];
             newList[index + 1] = temp;
             setDofusWindows(newList);
+            console.log(newList);
         }
     };
 
@@ -68,6 +63,10 @@ function App() {
         setIsFirst(false);
     }, [isFirst]);
 
+    const logList = () => {
+        console.log(dofusWindows);
+    };
+
     return (
         <div id="App">
             {/* <img src={logo} id="logo" alt="logo" /> */}
@@ -75,7 +74,7 @@ function App() {
             <button className="btn" onClick={getDofusWindows}>
                 Refresh
             </button>
-            <button>Save</button>
+            <button onClick={saveOrder}>Save</button>
             <button>Load</button>
             <button>Delete</button>
             <button>Précédent</button>
@@ -114,6 +113,7 @@ function App() {
             <button onClick={() => SetWindowForeground(dofusWindows[0].hwnd)}>
                 Foreground
             </button>
+            <button onClick={() => logList()}>Log la liste</button>
         </div>
     );
 }
