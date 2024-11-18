@@ -61,3 +61,13 @@
 .menu-container {
     display: flex;
 }
+
+input[type="checkbox"] {
+    transform: scale(1.5);
+    margin-left: 10px;
+}
+
+label {
+    font-size: 18px;
+    font-weight: bold;
+}

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// This is basically a port of WinActivate from AHK :
+// This is basically a port of winActivate from AHK :
 // - https://github.com/AutoHotkey/AutoHotkey/blob/581114c1c7bb3890ff61cf5f6e1f1201cd8c8b78/source/window.cpp
 // Slimmer version because we don't need as many checks
 // All credit goes to their contributors
@@ -22,7 +22,7 @@ var (
 
 var ATTEMPT_SET_FORE bool
 
-func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
+func (a *App) winActivate(targetWindow w32.HWND) w32.HWND {
 	origForegroundWindow := a.getForegroundWindow()
 	// Check if our window is valid, returns original if not
 	if !a.isWindowValid(targetWindow) {
@@ -30,7 +30,7 @@ func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
 		return origForegroundWindow
 	}
 
-	return a.SetForegroundWindowEx(targetWindow, origForegroundWindow)
+	return a.setForegroundWindowEx(targetWindow, origForegroundWindow)
 }
 
 // checks if our window can be activated
@@ -65,7 +65,7 @@ func (a *App) isWindowMinimized(hwnd w32.HWND) bool {
 }
 
 // Attempt to set the targetWindow to the foreground
-func (a *App) AttemptSetForeground(targetWindow w32.HWND, foregroundWindow w32.HWND) bool {
+func (a *App) attemptSetForeground(targetWindow w32.HWND, foregroundWindow w32.HWND) bool {
 	// We do not use the returning bool because from AHK contributors it is unreliable
 	_ = w32.SetForegroundWindow(targetWindow)
 
@@ -100,14 +100,14 @@ func detachThreadInputs(isAttachedMyToFore bool, isAttachedForeToTarget bool, ma
 	}
 }
 
-// This is done inside AttemptSetForeground for now
+// This is done inside attemptSetForeground for now
 // Check if our targetWindow was correctly brought forward
 // func (a *App) hasWindowActivated(targetWindow w32.HWND) bool {
 // 	return a.getForegroundWindow() == targetWindow
 // }
 
-func (a *App) SetForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow w32.HWND) w32.HWND {
-	runtime.LogPrint(a.ctx, "Inside SetForegroundWindowEx")
+func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow w32.HWND) w32.HWND {
+	runtime.LogPrint(a.ctx, "Inside setForegroundWindowEx")
 
 	targetThread := a.getWindowThreadProcessId(targetWindow)
 
@@ -126,7 +126,7 @@ func (a *App) SetForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 
 	runtime.LogPrint(a.ctx, "First Activation")
 	// First attempt at SetForeground
-	ATTEMPT_SET_FORE = a.AttemptSetForeground(targetWindow, newForeWindow)
+	ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow, newForeWindow)
 	if ATTEMPT_SET_FORE {
 		return targetWindow
 	}
@@ -169,7 +169,7 @@ func (a *App) SetForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 		}
 		runtime.LogPrint(a.ctx, "For loop activation")
 		// We try to SetForeground again up to 5 times
-		ATTEMPT_SET_FORE = a.AttemptSetForeground(targetWindow, newForeWindow)
+		ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow, newForeWindow)
 		// If success we return
 		if ATTEMPT_SET_FORE {
 			return newForeWindow
@@ -183,7 +183,7 @@ func (a *App) SetForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 		robotgo.KeyTap("alt")
 
 		// Last try
-		ATTEMPT_SET_FORE = a.AttemptSetForeground(targetWindow, newForeWindow)
+		ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow, newForeWindow)
 
 	}
 

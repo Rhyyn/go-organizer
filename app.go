@@ -16,7 +16,6 @@ import (
 	"github.com/lxn/win"
 	hook "github.com/robotn/gohook"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"golang.org/x/sys/windows"
 	"gopkg.in/ini.v1"
 )
 
@@ -64,6 +63,7 @@ var (
 	lastKeyHoldTime               time.Time
 	modKernel32                   = syscall.NewLazyDLL("kernel32.dll")
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
+	isMainHookActive              bool
 )
 
 const (
@@ -72,11 +72,14 @@ const (
 
 // HOOK
 // Need a button to start/stop
-func (a *App) Add() {
+func (a *App) addMainHook() {
 	chanHook := hook.Start()
 	defer hook.End()
 
 	for ev := range chanHook {
+		if !isMainHookActive {
+			continue
+		}
 		if ev.Rawcode == 114 {
 			if ev.Kind == hook.KeyHold {
 				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
@@ -115,7 +118,7 @@ func (a *App) Add() {
 
 					nextIndex := (currentIndex + 1) % len(a.DofusWindows)
 					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-					a.WinActivate(w32.HWND(nextWindow))
+					a.winActivate(w32.HWND(nextWindow))
 
 					// Not using this because might trigger anti cheat ?
 					// Leave it here cuz might be helpful one day
@@ -126,17 +129,30 @@ func (a *App) Add() {
 	}
 }
 
-func AllowSetForegroundWindow(pid uint32) error {
-	user32 := windows.NewLazySystemDLL("user32.dll")
-	proc := user32.NewProc("AllowSetForegroundWindow")
-
-	// Call the function with the process ID
-	r1, _, err := proc.Call(uintptr(pid))
-	if r1 == 0 {
-		return fmt.Errorf("AllowSetForegroundWindow failed: %v", err)
-	}
-	return nil
+func (a *App) PauseHook() {
+	runtime.LogPrint(a.ctx, "pausing hook")
+	isMainHookActive = false
 }
+
+func (a *App) ResumeHook() {
+	runtime.LogPrint(a.ctx, "resuming hook")
+	isMainHookActive = true
+}
+
+// Should not be needed, In theory at leastt
+// Used to grant ourselves the right to SetForeground
+// Very very very unreliable anyway
+// func AllowSetForegroundWindow(pid uint32) error {
+// 	user32 := windows.NewLazySystemDLL("user32.dll")
+// 	proc := user32.NewProc("AllowSetForegroundWindow")
+
+// 	// Call the function with the process ID
+// 	r1, _, err := proc.Call(uintptr(pid))
+// 	if r1 == 0 {
+// 		return fmt.Errorf("AllowSetForegroundWindow failed: %v", err)
+// 	}
+// 	return nil
+// }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
@@ -179,8 +195,8 @@ func (a *App) startup(ctx context.Context) {
 		a.saveCharacterList(iniFile, a.DofusWindows)
 	}
 
-	// Start hook for keyboard listener
-	a.Add()
+	// Start main hook for keyboard listener
+	a.addMainHook()
 }
 
 func getExecutableDir() (string, error) {

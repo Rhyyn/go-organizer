@@ -2,13 +2,17 @@ import { useState, useEffect } from "react";
 // import logo from './assets/images/logo-universal.png';
 import logo from "./assets/CLASSES_icons/logo-sram.png";
 import "./App.css";
-import { SetWindowForeground } from "../wailsjs/go/main/App";
-import { GetDofusWindows } from "../wailsjs/go/main/App";
-import { UpdateDofusWindows } from "../wailsjs/go/main/App";
-import { UpdateDofusWindowsOrder } from "../wailsjs/go/main/App";
+import {
+    GetDofusWindows,
+    UpdateDofusWindows,
+    UpdateDofusWindowsOrder,
+    PauseHook,
+    ResumeHook,
+} from "../wailsjs/go/main/App";
 
 function App() {
     const [isFirst, setIsFirst] = useState(true);
+    const [isActive, setIsActive] = useState(false);
 
     function getDofusWindows() {
         UpdateDofusWindows().then((result) => {
@@ -67,6 +71,15 @@ function App() {
         console.log(dofusWindows);
     };
 
+    const handleToggle = () => {
+        if (!isActive) {
+            ResumeHook();
+        } else {
+            PauseHook();
+        }
+        setIsActive(!isActive);
+    };
+
     return (
         <div id="App">
             {/* <img src={logo} id="logo" alt="logo" /> */}
@@ -110,10 +123,17 @@ function App() {
                     </ul>
                 )}
             </div>
-            <button onClick={() => SetWindowForeground(dofusWindows[0].hwnd)}>
-                Foreground
-            </button>
             <button onClick={() => logList()}>Log la liste</button>
+            <div>
+                <label>
+                    Hook is {isActive ? "Active" : "Paused"}
+                    <input
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={handleToggle}
+                    />
+                </label>
+            </div>
         </div>
     );
 }
