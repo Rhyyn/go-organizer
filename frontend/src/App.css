@@ -62,6 +62,57 @@
     display: flex;
 }
 
+.windows-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 95%;
+    margin: 0 auto;
+}
+
+.window-item {
+    display: flex;
+    width: 100%;
+    margin: 5px;
+    font-size: 1.5rem;
+    border: 2px solid rgb(149, 143, 143);
+    padding: 5px;
+}
+
+.left-container {
+    width: 80%;
+    display: flex;
+    justify-content: left;
+}
+.character-name {
+    margin-right: 10px;
+}
+
+.class-name {
+    margin-left: 10px;
+}
+
+.move-button {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    border-radius: 3px;
+    border: none;
+    margin: 0 10px;
+    padding: 0 8px;
+    cursor: pointer;
+}
+
+.move-button:hover {
+    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+    color: #333333;
+}
+
+.move-buttons-container {
+    display: flex;
+}
+
 input[type="checkbox"] {
     transform: scale(1.5);
     margin-left: 10px;
@@ -70,4 +121,12 @@ input[type="checkbox"] {
 label {
     font-size: 18px;
     font-weight: bold;
+}
+
+.active {
+    accent-color: #9b59b6;
+}
+
+.paused {
+    accent-color: #393939;
 }

@@ -88,28 +88,32 @@ function App() {
                 Refresh
             </button>
             <button onClick={saveOrder}>Save</button>
-            <button>Load</button>
-            <button>Delete</button>
-            <button>Précédent</button>
-            <button>Suivant</button>
             <div id="dofusWindowList">
                 {dofusWindows.length === 0 ? (
                     <p>No Dofus windows found.</p>
                 ) : (
-                    <ul>
+                    <div className="windows-container">
                         {dofusWindows.map((window, index) => (
-                            <li key={index}>
-                                <strong>{window.title}</strong> - Hwnd:{" "}
-                                {window.hwnd}
-                                <div>
-                                    {/* Arrows to move up and down */}
+                            <div className="window-item" key={index}>
+                                <div className="left-container">
+                                    <div className="character-name">
+                                        {window.CharacterName}
+                                    </div>
+                                    |
+                                    <div className="class-name">
+                                        {window.Class}
+                                    </div>
+                                </div>
+                                <div className="move-buttons-container">
                                     <button
+                                        className="move-button"
                                         onClick={() => moveUp(index)}
                                         disabled={index === 0}
                                     >
                                         ↑
                                     </button>
                                     <button
+                                        className="move-button"
                                         onClick={() => moveDown(index)}
                                         disabled={
                                             index === dofusWindows.length - 1
@@ -118,16 +122,19 @@ function App() {
                                         ↓
                                     </button>
                                 </div>
-                            </li>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 )}
             </div>
             <button onClick={() => logList()}>Log la liste</button>
             <div>
                 <label>
-                    Hook is {isActive ? "Active" : "Paused"}
+                    Organizer is : {isActive ? "Active" : "Paused"}
                     <input
+                        className={`custom-checkbox ${
+                            isActive ? "active" : "paused"
+                        }`}
                         type="checkbox"
                         checked={isActive}
                         onChange={handleToggle}
