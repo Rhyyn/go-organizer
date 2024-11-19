@@ -60,6 +60,53 @@
 
 .menu-container {
     display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.sub-menu-container {
+    display: flex;
+    width: 95%;
+    justify-content: flex-end;
+}
+
+.sub-btn {
+    width: 70px;
+}
+
+.sub-btn-text {
+    color: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.btn {
+    width: 110px;
+    height: 38px;
+    background-color: #686868;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin: 0 10px;
+}
+
+.btn2 {
+    width: 200px;
+    height: 38px;
+    background-color: #686868;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin: 0 10px;
+}
+
+.btn:hover {
+    background-color: #434343;
 }
 
 .windows-container {
@@ -75,9 +122,10 @@
     display: flex;
     width: 100%;
     margin: 5px;
-    font-size: 1.5rem;
-    border: 2px solid rgb(149, 143, 143);
+    font-size: 1.3rem;
     padding: 5px;
+    background-color: #434343;
+    border-radius: 4px;
 }
 
 .left-container {
@@ -102,15 +150,31 @@
     margin: 0 10px;
     padding: 0 8px;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+}
+
+.move-button-arrow {
+    width: 28px;
 }
 
 .move-button:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+    background-color: #15beca;
     color: #333333;
 }
 
 .move-buttons-container {
     display: flex;
+}
+
+.toggle-container {
+    margin-top: 10px;
+}
+
+.up-toggle-container {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-around;
 }
 
 input[type="checkbox"] {
@@ -121,12 +185,31 @@ input[type="checkbox"] {
 label {
     font-size: 18px;
     font-weight: bold;
+    background-color: #434343;
+    padding: 5px;
+
+    border-radius: 4px;
+}
+
+.toggle-label.paused {
+    background-color: #2d2d2d;
+    color: #bebebe;
+}
+.toggle-label.active {
+    color: #bebebe;
+    background-color: #434343;
+    border: 2px solid #15beca;
 }
 
 .active {
-    accent-color: #9b59b6;
+    accent-color: #15beca;
 }
 
 .paused {
     accent-color: #393939;
+    opacity: 70%;
+}
+
+.toggle-active {
+    border: 2px solid #15beca;
 }
