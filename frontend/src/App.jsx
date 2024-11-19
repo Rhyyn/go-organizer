@@ -11,6 +11,7 @@ import {
     UpdateDofusWindowsOrder,
     PauseHook,
     ResumeHook,
+    StartToggleHook,
 } from "../wailsjs/go/main/App";
 
 function App() {
@@ -95,29 +96,37 @@ function App() {
 
     const [defaultKeybindText, setDefaultKeybindText] = useState("Set Keybind");
 
+    const [wasOrganizerActive, setWasOrganizerActive] = useState(false);
     useEffect(() => {
-        EventsOn("statusUpdated", (newKeybind) => {
+        EventsOn("toggleKeybindUpdated", (newKeybind) => {
             setDefaultKeybindText(newKeybind);
+            setIsToggleListening(false);
+            if (wasOrganizerActive) {
+                setIsActive(true);
+                setWasOrganizerActive(false);
+            }
         });
 
         return () => {
-            EventsOff("statusUpdated");
+            EventsOff("toggleKeybindUpdated");
         };
-    }, []);
+    }, [isActive]);
 
     const [isToggleListening, setIsToggleListening] = useState(false);
     const handleToggleKeybind = () => {
-        if (isActive) {
-            PauseHook();
-            setIsActive(!isActive);
-        }
+        // if (isActive) {
+        //     setWasOrganizerActive(true);
+        //     PauseHook();
+        //     setIsActive(false);
+        // }
+        StartToggleHook();
         setDefaultKeybindText("Listening for input..");
-        setIsToggleListening(!isToggleListening);
+        setIsToggleListening(true);
 
-        if (!isActive) {
-            ResumeHook();
-            setIsActive(!isActive);
-        }
+        // if (!isActive && wasOrganizerActive) {
+        //     ResumeHook();
+        //     setIsActive(true);
+        // }
     };
 
     return (

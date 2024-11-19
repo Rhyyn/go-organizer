@@ -11,10 +11,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/go-vgo/robotgo"
 	"github.com/gonutz/w32/v2"
-	"github.com/lxn/win"
-	hook "github.com/robotn/gohook"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gopkg.in/ini.v1"
 )
@@ -65,112 +62,20 @@ var (
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
 	isMainHookActive              bool
 	toggleListenerKeybind         string
-	toggleListenerRawCode         int
+	toggleListenerRawCode         uint16
 )
 
 const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
-// HOOK
-// Need a button to start/stop
-func (a *App) addMainHook() {
-	chanHook := hook.Start()
-	defer hook.End()
-
-	for ev := range chanHook {
-		if !isMainHookActive {
-			continue
-		}
-		if ev.Rawcode == 114 {
-			if ev.Kind == hook.KeyHold {
-				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
-					// Update the last processed time
-					lastKeyHoldTime = time.Now()
-					a.UpdateStatus("test")
-
-					// logs the global event for debug
-					// runtime.LogPrintf(a.ctx, "%v", ev)
-
-					// activeWindow := robotgo.GetHWND()
-					activeWindowTitle := robotgo.GetTitle()
-
-					var currentIndex int
-					var nextWindow win.HWND
-
-					// Need to separarte this logic so we can work with our array
-					windowTitleMap := make(map[string]int)
-					for i, window := range a.DofusWindows {
-						windowTitleMap[window.Title] = i
-					}
-
-					currentIndex, found := windowTitleMap[activeWindowTitle]
-
-					if !found {
-						runtime.LogPrintf(a.ctx, "Current window not found")
-						return
-					}
-
-					nextIndex := (currentIndex + 1) % len(a.DofusWindows)
-					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-					a.winActivate(w32.HWND(nextWindow))
-					// for i, window := range a.DofusWindows {
-					// 	if window.Title == activeWindowTitle {
-					// 		runtime.LogPrintf(a.ctx, "current char : %s", a.DofusWindows[i].CharacterName)
-					// 		currentIndex = i
-					// 		break
-					// 	}
-					// }
-
-					// Not using this because might trigger anti cheat ?
-					// Leave it here cuz might be helpful one day
-					// exeName, _ := GetExecutableName(w32.HWND(activeWindow))
-				}
-			}
-		}
-		if ev.Rawcode == 113 {
-			if ev.Kind == hook.KeyHold {
-				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
-					// Update the last processed time
-					lastKeyHoldTime = time.Now()
-
-					// logs the global event for debug
-					// runtime.LogPrintf(a.ctx, "%v", ev)
-
-					// activeWindow := robotgo.GetHWND()
-					activeWindowTitle := robotgo.GetTitle()
-
-					var currentIndex int
-					var nextWindow win.HWND
-
-					// Need to separate this logic so we can work with our array
-					windowTitleMap := make(map[string]int)
-					for i, window := range a.DofusWindows {
-						windowTitleMap[window.Title] = i
-					}
-
-					currentIndex, found := windowTitleMap[activeWindowTitle]
-
-					if !found {
-						runtime.LogPrintf(a.ctx, "Current window not found")
-						return
-					}
-
-					// Reverse the index logic, decrement and wrap around if less than 0
-					nextIndex := (currentIndex - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
-					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-					a.winActivate(w32.HWND(nextWindow))
-				}
-			}
-		}
-	}
-}
-
-func (a *App) UpdateStatus(newKeybind string) {
-	toggleListenerKeybind = newKeybind
-
-	// Notify the frontend of the update
-	runtime.EventsEmit(a.ctx, "statusUpdated", toggleListenerKeybind)
+func (a *App) UpdateToggleKeybind(newKeybind string) {
+	// toggleListenerKeybind = newKeybind
+	// runtime.EventsEmit(a.ctx, "toggleKeybindUpdated", toggleListenerKeybind)
+	go func() {
+		toggleListenerKeybind = newKeybind
+		runtime.EventsEmit(a.ctx, "toggleKeybindUpdated", toggleListenerKeybind)
+	}()
 }
 
 func (a *App) GetToggleListenerKeybind() string {
@@ -178,30 +83,6 @@ func (a *App) GetToggleListenerKeybind() string {
 		return toggleListenerKeybind
 	}
 	return "Invalid Keybind"
-}
-
-func (a *App) AddPauseHook() {
-	chanHook := hook.Start()
-	defer hook.End()
-
-	for ev := range chanHook {
-		if ev.Kind == hook.KeyHold || ev.Kind == hook.KeyDown || ev.Kind == hook.KeyUp ||
-			ev.Kind == hook.MouseDown || ev.Kind == hook.MouseUp {
-			toggleListenerKeybind = string(ev.Keychar)
-			toggleListenerRawCode = int(ev.Rawcode)
-			break
-		}
-	}
-}
-
-func (a *App) PauseHook() {
-	runtime.LogPrint(a.ctx, "pausing hook")
-	isMainHookActive = false
-}
-
-func (a *App) ResumeHook() {
-	runtime.LogPrint(a.ctx, "resuming hook")
-	isMainHookActive = true
 }
 
 // Should not be needed, In theory at leastt
@@ -489,12 +370,6 @@ func GetExecutableName(hwnd w32.HWND) (string, error) {
 	}
 
 	return filepath.Base(syscall.UTF16ToString(buffer[:size])), nil
-}
-
-// Simulate Alt, down+up, used to make dumbass microsoft windows let us use it's SetForeground api
-func SimulateAltPress() {
-	robotgo.KeyTap("alt")
-	time.Sleep(50 * time.Millisecond)
 }
 
 // Used by the frontend to fetch the array
