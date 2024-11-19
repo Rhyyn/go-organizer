@@ -11,7 +11,11 @@ import {
     UpdateDofusWindowsOrder,
     PauseHook,
     ResumeHook,
-    StartToggleHook,
+    GetKeycodes,
+    SaveStopOrgaKeyBind,
+    SavePreviousCharKeybind,
+    SaveNextCharKeybind,
+    GetAllKeyBindings,
 } from "../wailsjs/go/main/App";
 
 function App() {
@@ -19,11 +23,39 @@ function App() {
     const [isActive, setIsActive] = useState(false);
     const [isShiftActive, setIsShiftActive] = useState(false);
     const [isAltActive, setIsAltActive] = useState(false);
+    const [dofusWindows, setDofusWindows] = useState([]);
+    const [keycodes, setKeycodes] = useState([]);
+
+    const [previousKey, setPreviousKey] = useState("");
+    const [nextKey, setNextKey] = useState("");
+    const [stopOrganizerKey, setstopOrganizerKey] = useState("");
+
+    function fetchSavedKeys() {
+        GetAllKeyBindings().then((result) => {
+            console.log(result["StopOrganizer"].KeyName);
+            setstopOrganizerKey(result["StopOrganizer"].KeyName);
+            setNextKey(result["NextChar"].KeyName);
+            setPreviousKey(result["PreviousChar"].KeyName);
+        });
+    }
 
     function getDofusWindows() {
         UpdateDofusWindows().then((result) => {
             const sortedList = [...result].sort((a, b) => a.Order - b.Order);
             setDofusWindows(sortedList);
+        });
+    }
+
+    function getKeyCodes() {
+        GetKeycodes().then((result) => {
+            const keycodesArray = Object.entries(result).map(
+                ([code, name]) => ({
+                    Code: parseInt(code, 10),
+                    Name: name,
+                })
+            );
+            const sortedList = keycodesArray.sort((a, b) => a.Code - b.Code);
+            setKeycodes(sortedList);
         });
     }
 
@@ -56,8 +88,6 @@ function App() {
         }
     };
 
-    const [dofusWindows, setDofusWindows] = useState([]);
-
     const updateWindows = (windows) => {
         setDofusWindows(windows); // Update the state with the list of windows
     };
@@ -69,6 +99,8 @@ function App() {
                 .catch((error) => {
                     console.error("Error fetching Dofus windows:", error); // Error handling
                 });
+            getKeyCodes();
+            fetchSavedKeys();
         }
         setIsFirst(false);
     }, [isFirst]);
@@ -86,48 +118,15 @@ function App() {
         setIsActive(!isActive);
     };
 
-    const handleModifierToggle = (modifier) => {
-        if (modifier === "shift") {
-            setIsShiftActive(!isShiftActive);
-        } else if (modifier === "alt") {
-            setIsAltActive(!isAltActive);
-        }
-    };
-
-    const [defaultKeybindText, setDefaultKeybindText] = useState("Set Keybind");
-
-    const [wasOrganizerActive, setWasOrganizerActive] = useState(false);
     useEffect(() => {
-        EventsOn("toggleKeybindUpdated", (newKeybind) => {
-            setDefaultKeybindText(newKeybind);
-            setIsToggleListening(false);
-            if (wasOrganizerActive) {
-                setIsActive(true);
-                setWasOrganizerActive(false);
-            }
+        EventsOn("updateMainHookState", (newState) => {
+            setIsActive(newState);
         });
 
         return () => {
-            EventsOff("toggleKeybindUpdated");
+            EventsOff("updateMainHookState");
         };
     }, [isActive]);
-
-    const [isToggleListening, setIsToggleListening] = useState(false);
-    const handleToggleKeybind = () => {
-        // if (isActive) {
-        //     setWasOrganizerActive(true);
-        //     PauseHook();
-        //     setIsActive(false);
-        // }
-        StartToggleHook();
-        setDefaultKeybindText("Listening for input..");
-        setIsToggleListening(true);
-
-        // if (!isActive && wasOrganizerActive) {
-        //     ResumeHook();
-        //     setIsActive(true);
-        // }
-    };
 
     return (
         <div id="App">
@@ -139,8 +138,8 @@ function App() {
                 <button className="btn" onClick={saveOrder}>
                     Save
                 </button>
-                <button className="btn">Previous</button>
-                <button className="btn">Next</button>
+                {/* <button className="btn">Previous</button>
+                <button className="btn">Next</button> */}
             </div>
             {/* <div className="sub-menu-container">
                 <label className="sub-btn-text">
@@ -209,7 +208,6 @@ function App() {
                     </div>
                 )}
             </div>
-            <button onClick={() => logList()}>Log la liste</button>
             <div className="toggle-container">
                 <div className="up-toggle-container">
                     <label
@@ -227,7 +225,7 @@ function App() {
                             onChange={handleActiveToggle}
                         />
                     </label>
-                    <button
+                    {/* <button
                         className={`btn2 ${
                             isToggleListening
                                 ? "toggle-active"
@@ -236,8 +234,94 @@ function App() {
                         onClick={handleToggleKeybind}
                     >
                         {defaultKeybindText}
-                    </button>
+                    </button> */}
                 </div>
+            </div>
+            <div className="bottom-container">
+                <label className="dropdown-label">
+                    Stop Organizer :
+                    <select
+                        className="dropdown"
+                        value={stopOrganizerKey}
+                        onChange={(event) => {
+                            const selectedOption =
+                                event.target.options[
+                                    event.target.selectedIndex
+                                ];
+                            SaveStopOrgaKeyBind(
+                                parseInt(selectedOption.dataset.key),
+                                selectedOption.value
+                            );
+                            fetchSavedKeys();
+                        }}
+                    >
+                        {keycodes.map((key) => (
+                            <option
+                                key={key.Code}
+                                value={key.Name} // Set the value to key.Name
+                                data-key={key.Code} // Set data-key to key.Code
+                            >
+                                {key.Name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label className="dropdown-label">
+                    Previous :
+                    <select
+                        className="dropdown"
+                        value={previousKey}
+                        onChange={(event) => {
+                            const selectedOption =
+                                event.target.options[
+                                    event.target.selectedIndex
+                                ];
+                            SavePreviousCharKeybind(
+                                parseInt(selectedOption.dataset.key), // Use data-key for keycode
+                                selectedOption.value // Use value for key name
+                            );
+                            fetchSavedKeys();
+                        }}
+                    >
+                        {keycodes.map((key) => (
+                            <option
+                                key={key.Code}
+                                value={key.Name} // Set the value to key.Name
+                                data-key={key.Code} // Set data-key to key.Code
+                            >
+                                {key.Name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label className="dropdown-label">
+                    Next :
+                    <select
+                        className="dropdown"
+                        value={nextKey}
+                        onChange={(event) => {
+                            const selectedOption =
+                                event.target.options[
+                                    event.target.selectedIndex
+                                ];
+                            SaveNextCharKeybind(
+                                parseInt(selectedOption.dataset.key), // Use data-key for keycode
+                                selectedOption.value // Use value for key name
+                            );
+                            fetchSavedKeys();
+                        }}
+                    >
+                        {keycodes.map((key) => (
+                            <option
+                                key={key.Code}
+                                value={key.Name} // Set the value to key.Name
+                                data-key={key.Code} // Set data-key to key.Code
+                            >
+                                {key.Name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
             </div>
         </div>
     );

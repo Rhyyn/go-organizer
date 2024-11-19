@@ -57,25 +57,34 @@ func NewApp() *App {
 
 var (
 	iniFilePath                   string
+	configFilePath                string
 	lastKeyHoldTime               time.Time
 	modKernel32                   = syscall.NewLazyDLL("kernel32.dll")
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
 	isMainHookActive              bool
 	toggleListenerKeybind         string
-	toggleListenerRawCode         uint16
+	configFile                    *ini.File
+	exeDir                        string
+	stopOrganizerKeybind          int32
+	previousCharKeybind           int32
+	nextCharKeybind               int32
 )
 
 const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
-func (a *App) UpdateToggleKeybind(newKeybind string) {
-	// toggleListenerKeybind = newKeybind
-	// runtime.EventsEmit(a.ctx, "toggleKeybindUpdated", toggleListenerKeybind)
-	go func() {
-		toggleListenerKeybind = newKeybind
-		runtime.EventsEmit(a.ctx, "toggleKeybindUpdated", toggleListenerKeybind)
-	}()
+// func (a *App) UpdateToggleKeybind(newKeybind string) {
+// 	// toggleListenerKeybind = newKeybind
+// 	// runtime.EventsEmit(a.ctx, "toggleKeybindUpdated", toggleListenerKeybind)
+// 	go func() {
+// 		toggleListenerKeybind = newKeybind
+// 		// runtime.EventsEmit(a.ctx, "toggleKeybindUpdated", toggleListenerKeybind)
+// 	}()
+// }
+
+func (a *App) UpdateMainHookState() {
+	runtime.EventsEmit(a.ctx, "updateMainHookState", isMainHookActive)
 }
 
 func (a *App) GetToggleListenerKeybind() string {
@@ -116,12 +125,21 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	// ini file
-	iniFilePath = filepath.Join(exeDir, "characters.ini")
+	configFilePath = filepath.Join(exeDir, "config.ini")
+	// check if config  ini file exists
+	configFile, err, exists := loadINIFile(configFilePath)
+	if !exists {
+		a.CreateConfigSection(configFile, exeDir)
+	}
+	runtime.LogPrintf(a.ctx, "config exists %t", exists)
+	if err != nil {
+		runtime.LogError(a.ctx, "Error with the ini file")
+	}
 
-	// check if ini file exists
-	iniFile, err, exists := loadINIFile()
-	runtime.LogPrintf(a.ctx, "exists %t", exists)
+	iniFilePath = filepath.Join(exeDir, "characters.ini")
+	// check if characters ini file exists
+	iniFile, err, exists := loadINIFile(iniFilePath)
+	runtime.LogPrintf(a.ctx, "characters exists %t", exists)
 	if err != nil {
 		runtime.LogError(a.ctx, "Error with the ini file")
 	}
@@ -142,6 +160,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 
 	// Start main hook for keyboard listener
+	// a.addPauseHook()
 	a.addMainHook()
 }
 
@@ -215,7 +234,7 @@ func (a *App) UpdateDofusWindowsOrder(newOrder []WindowInfo) error {
 	// 	runtime.LogDebugf(a.ctx, "windowName :%s", window.CharacterName)
 	// }
 
-	iniFile, err, _ := loadINIFile()
+	iniFile, err, _ := loadINIFile(iniFilePath)
 	if err != nil {
 		runtime.LogError(a.ctx, "Erreur dans le loading de l'INI ligne 273")
 	}
@@ -318,11 +337,35 @@ func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
 	return characterNames, nil
 }
 
+func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
+	section, err := cfg.GetSection("KeyBindings")
+	if err != nil {
+		section = cfg.Section("KeyBindings")
+	}
+
+	if section.Key("StopOrganizer").String() == "" {
+		section.Key("StopOrganizer").SetValue("115,F4")
+	}
+	if section.Key("PreviousChar").String() == "" {
+		section.Key("PreviousChar").SetValue("113,F2")
+	}
+	if section.Key("NextChar").String() == "" {
+		section.Key("NextChar").SetValue("114,F3")
+	}
+
+	err = cfg.SaveTo(filepath.Join(exeDir, "config.ini"))
+	if err != nil {
+		runtime.LogErrorf(a.ctx, "Error saving config file: %v", err)
+	} else {
+		runtime.LogPrintf(a.ctx, "Config file created/updated successfully")
+	}
+}
+
 // Load if not exists, CREATE ini
-func loadINIFile() (*ini.File, error, bool) {
-	if _, err := os.Stat(iniFilePath); err == nil {
+func loadINIFile(filePath string) (*ini.File, error, bool) {
+	if _, err := os.Stat(filePath); err == nil {
 		// File exists, load it
-		cfg, err := ini.Load(iniFilePath)
+		cfg, err := ini.Load(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load INI file: %w", err), false
 		}

@@ -19,7 +19,7 @@ func main() {
 	err := wails.Run(&options.App{
 		Title:  "go-organizer",
 		Width:  512,
-		Height: 512,
+		Height: 800,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

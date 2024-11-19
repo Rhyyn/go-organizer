@@ -60,7 +60,7 @@
 
 .menu-container {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     margin-bottom: 10px;
     margin-top: 10px;
 }
@@ -215,4 +215,21 @@ label {
 
 .toggle-active {
     border: 2px solid #15beca;
+}
+
+.bottom-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.dropdown-label {
+    width: 350px;
+    display: flex;
+    justify-content: space-between;
+    margin: 2px;
+}
+
+.dropdown {
+    outline: none;
 }

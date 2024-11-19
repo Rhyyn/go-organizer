@@ -13,6 +13,10 @@ package main
 // UMap type map[string]uint16
 type UMap map[uint16]string
 
+func (a *App) GetKeycodes() UMap {
+	return Keycode
+}
+
 // Keycode robotgo hook key's code map
 var Keycode = UMap{
 	3:   "Middle Mouse",
@@ -28,16 +32,7 @@ var Keycode = UMap{
 	55:  "7",
 	56:  "8",
 	57:  "9",
-	8:   "Backspace",
-	9:   "Tab",
-	13:  "Enter",
-	16:  "Shift",
-	17:  "Ctrl",
-	18:  "Alt",
 	19:  "Pausebreak",
-	20:  "Capslock",
-	27:  "esc",
-	32:  "space",
 	33:  "pageup",
 	34:  "pagedown",
 	35:  "end",
@@ -46,7 +41,6 @@ var Keycode = UMap{
 	38:  "Up arrow",
 	39:  "Right arrow",
 	40:  "Down arrow",
-	44:  "print_screen",
 	45:  "insert",
 	46:  "delete",
 	65:  "A",
@@ -75,9 +69,6 @@ var Keycode = UMap{
 	88:  "X",
 	89:  "Y",
 	90:  "Z",
-	91:  "leftwindowkey",
-	92:  "rightwindowkey",
-	93:  "selectkey",
 	96:  "numpad0",
 	97:  "numpad1",
 	98:  "numpad2",
@@ -88,11 +79,6 @@ var Keycode = UMap{
 	103: "numpad7",
 	104: "numpad8",
 	105: "numpad9",
-	106: "multiply",
-	107: "add",
-	109: "subtract",
-	110: "decimalpoint",
-	111: "divide",
 	112: "F1",
 	113: "F2",
 	114: "F3",
@@ -105,8 +91,6 @@ var Keycode = UMap{
 	121: "F10",
 	122: "F11",
 	123: "F12",
-	144: "numlock",
-	145: "scrolllock",
 	186: "semicolon",
 	187: "equalsign",
 	188: "comma",
