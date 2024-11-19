@@ -64,6 +64,8 @@ var (
 	modKernel32                   = syscall.NewLazyDLL("kernel32.dll")
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
 	isMainHookActive              bool
+	toggleListenerKeybind         string
+	toggleListenerRawCode         int
 )
 
 const (
@@ -85,6 +87,7 @@ func (a *App) addMainHook() {
 				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
 					// Update the last processed time
 					lastKeyHoldTime = time.Now()
+					a.UpdateStatus("test")
 
 					// logs the global event for debug
 					// runtime.LogPrintf(a.ctx, "%v", ev)
@@ -108,6 +111,9 @@ func (a *App) addMainHook() {
 						return
 					}
 
+					nextIndex := (currentIndex + 1) % len(a.DofusWindows)
+					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
+					a.winActivate(w32.HWND(nextWindow))
 					// for i, window := range a.DofusWindows {
 					// 	if window.Title == activeWindowTitle {
 					// 		runtime.LogPrintf(a.ctx, "current char : %s", a.DofusWindows[i].CharacterName)
@@ -116,15 +122,74 @@ func (a *App) addMainHook() {
 					// 	}
 					// }
 
-					nextIndex := (currentIndex + 1) % len(a.DofusWindows)
-					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-					a.winActivate(w32.HWND(nextWindow))
-
 					// Not using this because might trigger anti cheat ?
 					// Leave it here cuz might be helpful one day
 					// exeName, _ := GetExecutableName(w32.HWND(activeWindow))
 				}
 			}
+		}
+		if ev.Rawcode == 113 {
+			if ev.Kind == hook.KeyHold {
+				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
+					// Update the last processed time
+					lastKeyHoldTime = time.Now()
+
+					// logs the global event for debug
+					// runtime.LogPrintf(a.ctx, "%v", ev)
+
+					// activeWindow := robotgo.GetHWND()
+					activeWindowTitle := robotgo.GetTitle()
+
+					var currentIndex int
+					var nextWindow win.HWND
+
+					// Need to separate this logic so we can work with our array
+					windowTitleMap := make(map[string]int)
+					for i, window := range a.DofusWindows {
+						windowTitleMap[window.Title] = i
+					}
+
+					currentIndex, found := windowTitleMap[activeWindowTitle]
+
+					if !found {
+						runtime.LogPrintf(a.ctx, "Current window not found")
+						return
+					}
+
+					// Reverse the index logic, decrement and wrap around if less than 0
+					nextIndex := (currentIndex - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
+					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
+					a.winActivate(w32.HWND(nextWindow))
+				}
+			}
+		}
+	}
+}
+
+func (a *App) UpdateStatus(newKeybind string) {
+	toggleListenerKeybind = newKeybind
+
+	// Notify the frontend of the update
+	runtime.EventsEmit(a.ctx, "statusUpdated", toggleListenerKeybind)
+}
+
+func (a *App) GetToggleListenerKeybind() string {
+	if len(toggleListenerKeybind) > 0 {
+		return toggleListenerKeybind
+	}
+	return "Invalid Keybind"
+}
+
+func (a *App) AddPauseHook() {
+	chanHook := hook.Start()
+	defer hook.End()
+
+	for ev := range chanHook {
+		if ev.Kind == hook.KeyHold || ev.Kind == hook.KeyDown || ev.Kind == hook.KeyUp ||
+			ev.Kind == hook.MouseDown || ev.Kind == hook.MouseUp {
+			toggleListenerKeybind = string(ev.Keychar)
+			toggleListenerRawCode = int(ev.Rawcode)
+			break
 		}
 	}
 }
