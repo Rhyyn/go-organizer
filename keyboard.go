@@ -11,8 +11,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// we need two hooks main and pause
-
 // HOOK
 // Need a button to start/stop
 func (a *App) addMainHook() {
@@ -20,22 +18,31 @@ func (a *App) addMainHook() {
 	defer hook.End()
 
 	var isKeyPressed bool
+	var lastToggleTime time.Time
 
 	for ev := range chanHook {
 
 		if ev.Rawcode == uint16(stopOrganizerKeybind) {
+			now := time.Now()
+
 			if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold && !isKeyPressed {
-				isKeyPressed = true
-				isMainHookActive = !isMainHookActive
-				runtime.LogPrint(a.ctx, "invert bool")
-				runtime.LogPrintf(a.ctx, "isMainHookActive : %t", isMainHookActive)
-				a.UpdateMainHookState()
+				if !isKeyPressed && now.Sub(lastToggleTime) > 200*time.Millisecond {
+					lastToggleTime = now
+
+					isKeyPressed = true
+					isMainHookActive = !isMainHookActive
+					runtime.LogPrint(a.ctx, "invert bool")
+					runtime.LogPrintf(a.ctx, "isMainHookActive : %t", isMainHookActive)
+					a.UpdateMainHookState()
+				}
 			}
 
 			if ev.Kind == hook.KeyUp {
-				isKeyPressed = false
-				runtime.LogPrint(a.ctx, "up")
-				a.UpdateMainHookState()
+				if isKeyPressed {
+					runtime.LogPrint(a.ctx, "up")
+					isKeyPressed = false
+					a.UpdateMainHookState()
+				}
 			}
 		}
 
@@ -43,86 +50,83 @@ func (a *App) addMainHook() {
 			continue
 		}
 
-		if ev.Rawcode == uint16(nextCharKeybind) {
-			if ev.Kind == hook.KeyHold {
-				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
-					// Update the last processed time
-					lastKeyHoldTime = time.Now()
+		if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold || ev.Kind == hook.MouseDown {
+			activeWindowTitle := robotgo.GetTitle()
+			// Need to separarte this logic so we can work with our array
+			windowTitleMap := make(map[string]int)
+			for i, window := range a.DofusWindows {
+				windowTitleMap[window.Title] = i
+			}
+			var currentIndex int
+			currentIndex, found := windowTitleMap[activeWindowTitle]
+			if !found {
+				runtime.LogPrintf(a.ctx, "Current window not dofus")
+				continue
+			}
 
-					// logs the global event for debug
-					// runtime.LogPrintf(a.ctx, "%v", ev)
+			if ev.Rawcode == uint16(nextCharKeybind) {
+				if ev.Kind == hook.KeyHold {
+					if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
+						// Update the last processed time
+						lastKeyHoldTime = time.Now()
 
-					// activeWindow := robotgo.GetHWND()
-					activeWindowTitle := robotgo.GetTitle()
+						// logs the global event for debug
+						// runtime.LogPrintf(a.ctx, "%v", ev)
+						var nextWindow win.HWND
+						nextIndex := (currentIndex + 1) % len(a.DofusWindows)
+						nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
+						a.winActivate(w32.HWND(nextWindow))
+						// for i, window := range a.DofusWindows {
+						// 	if window.Title == activeWindowTitle {
+						// 		runtime.LogPrintf(a.ctx, "current char : %s", a.DofusWindows[i].CharacterName)
+						// 		currentIndex = i
+						// 		break
+						// 	}
+						// }
 
-					var currentIndex int
-					var nextWindow win.HWND
-
-					// Need to separarte this logic so we can work with our array
-					windowTitleMap := make(map[string]int)
-					for i, window := range a.DofusWindows {
-						windowTitleMap[window.Title] = i
+						// Not using this because might trigger anti cheat ?
+						// Leave it here cuz might be helpful one day
+						// exeName, _ := GetExecutableName(w32.HWND(activeWindow))
 					}
+				}
+			}
+			if ev.Rawcode == uint16(previousCharKeybind) {
+				if ev.Kind == hook.KeyHold {
+					if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
+						// Update the last processed time
+						lastKeyHoldTime = time.Now()
 
-					currentIndex, found := windowTitleMap[activeWindowTitle]
+						// logs the global event for debug
+						// runtime.LogPrintf(a.ctx, "%v", ev)
 
-					if !found {
-						runtime.LogPrintf(a.ctx, "Current window not found")
-						return
+						// activeWindow := robotgo.GetHWND()
+						activeWindowTitle := robotgo.GetTitle()
+
+						var currentIndex int
+						var nextWindow win.HWND
+
+						// Need to separate this logic so we can work with our array
+						windowTitleMap := make(map[string]int)
+						for i, window := range a.DofusWindows {
+							windowTitleMap[window.Title] = i
+						}
+
+						currentIndex, found := windowTitleMap[activeWindowTitle]
+
+						if !found {
+							runtime.LogPrintf(a.ctx, "Current window not found")
+							return
+						}
+
+						// Reverse the index logic, decrement and wrap around if less than 0
+						nextIndex := (currentIndex - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
+						nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
+						a.winActivate(w32.HWND(nextWindow))
 					}
-
-					nextIndex := (currentIndex + 1) % len(a.DofusWindows)
-					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-					a.winActivate(w32.HWND(nextWindow))
-					// for i, window := range a.DofusWindows {
-					// 	if window.Title == activeWindowTitle {
-					// 		runtime.LogPrintf(a.ctx, "current char : %s", a.DofusWindows[i].CharacterName)
-					// 		currentIndex = i
-					// 		break
-					// 	}
-					// }
-
-					// Not using this because might trigger anti cheat ?
-					// Leave it here cuz might be helpful one day
-					// exeName, _ := GetExecutableName(w32.HWND(activeWindow))
 				}
 			}
 		}
-		if ev.Rawcode == uint16(previousCharKeybind) {
-			if ev.Kind == hook.KeyHold {
-				if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
-					// Update the last processed time
-					lastKeyHoldTime = time.Now()
 
-					// logs the global event for debug
-					// runtime.LogPrintf(a.ctx, "%v", ev)
-
-					// activeWindow := robotgo.GetHWND()
-					activeWindowTitle := robotgo.GetTitle()
-
-					var currentIndex int
-					var nextWindow win.HWND
-
-					// Need to separate this logic so we can work with our array
-					windowTitleMap := make(map[string]int)
-					for i, window := range a.DofusWindows {
-						windowTitleMap[window.Title] = i
-					}
-
-					currentIndex, found := windowTitleMap[activeWindowTitle]
-
-					if !found {
-						runtime.LogPrintf(a.ctx, "Current window not found")
-						return
-					}
-
-					// Reverse the index logic, decrement and wrap around if less than 0
-					nextIndex := (currentIndex - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
-					nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-					a.winActivate(w32.HWND(nextWindow))
-				}
-			}
-		}
 	}
 }
 
@@ -212,65 +216,54 @@ func (a *App) addMainHook() {
 // 	}
 // }
 
-func (a *App) SaveStopOrgaKeyBind(keycode int32, keyname string) {
-	// runtime.LogPrintf(a.ctx, "keycode to save : %d", keycode)
-	// runtime.LogPrintf(a.ctx, "keyname to save : %s", keyname)
+// TODO : Extract logic from those 3
+
+func (a *App) SaveStopOrgaKeyBind(keycode int32, keyname string) (string, error) {
 	configFile, _, _ = loadINIFile(configFilePath)
-	section, err := configFile.GetSection("KeyBindings")
-	if err != nil {
-		runtime.LogPrintf(a.ctx, "Error getting section: %v", err)
-		return
-	}
+	section, _ := configFile.GetSection("KeyBindings")
 
 	value := fmt.Sprintf("%d,%s", keycode, keyname)
 
 	section.Key("StopOrganizer").SetValue(value)
 
-	err = configFile.SaveTo(configFilePath)
+	err := configFile.SaveTo(configFilePath)
 	if err != nil {
 		runtime.LogPrintf(a.ctx, "Error saving INI file: %v", err)
-	} else {
-		runtime.LogPrintf(a.ctx, "Key saved successfully")
+		return "", err
 	}
+	return "sucess", nil
 }
 
-func (a *App) SavePreviousCharKeybind(keycode int32, keyname string) {
+func (a *App) SavePreviousCharKeybind(keycode int32, keyname string) (string, error) {
 	configFile, _, _ = loadINIFile(configFilePath)
-	section, err := configFile.GetSection("KeyBindings")
-	if err != nil {
-		runtime.LogPrintf(a.ctx, "Error getting section: %v", err)
-		return
-	}
+	// ingore err for now cuz I CBA
+	section, _ := configFile.GetSection("KeyBindings")
 	value := fmt.Sprintf("%d,%s", keycode, keyname)
 
 	section.Key("PreviousChar").SetValue(value)
 
-	err = configFile.SaveTo(configFilePath)
+	err := configFile.SaveTo(configFilePath)
 	if err != nil {
 		runtime.LogPrintf(a.ctx, "Error saving INI file: %v", err)
-	} else {
-		runtime.LogPrintf(a.ctx, "Key saved successfully")
+		return "", err
 	}
+	return "success", nil
 }
 
-func (a *App) SaveNextCharKeybind(keycode int32, keyname string) {
+func (a *App) SaveNextCharKeybind(keycode int32, keyname string) (string, error) {
 	configFile, _, _ = loadINIFile(configFilePath)
-	section, err := configFile.GetSection("KeyBindings")
-	if err != nil {
-		runtime.LogPrintf(a.ctx, "Error getting section: %v", err)
-		return
-	}
+	section, _ := configFile.GetSection("KeyBindings")
 
 	value := fmt.Sprintf("%d,%s", keycode, keyname)
 
 	section.Key("NextChar").SetValue(value)
 
-	err = configFile.SaveTo(configFilePath)
+	err := configFile.SaveTo(configFilePath)
 	if err != nil {
 		runtime.LogPrintf(a.ctx, "Error saving INI file: %v", err)
-	} else {
-		runtime.LogPrintf(a.ctx, "Key saved successfully")
+		return "", err
 	}
+	return "sucess", nil
 }
 
 func (a *App) GetAllKeyBindings() (map[string]struct {

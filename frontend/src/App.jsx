@@ -243,16 +243,29 @@ function App() {
                     <select
                         className="dropdown"
                         value={stopOrganizerKey}
-                        onChange={(event) => {
+                        onKeyDown={(event) => {
+                            // might need some more
+                            event.preventDefault();
+                        }}
+                        onChange={async (event) => {
                             const selectedOption =
                                 event.target.options[
                                     event.target.selectedIndex
                                 ];
-                            SaveStopOrgaKeyBind(
-                                parseInt(selectedOption.dataset.key),
-                                selectedOption.value
-                            );
-                            fetchSavedKeys();
+
+                            try {
+                                await SaveStopOrgaKeyBind(
+                                    parseInt(selectedOption.dataset.key),
+                                    selectedOption.value
+                                );
+
+                                fetchSavedKeys();
+                            } catch (error) {
+                                console.error(
+                                    "Error saving keybind or fetching keys:",
+                                    error
+                                );
+                            }
                         }}
                     >
                         {keycodes.map((key) => (
@@ -271,16 +284,28 @@ function App() {
                     <select
                         className="dropdown"
                         value={previousKey}
-                        onChange={(event) => {
+                        onKeyDown={(event) => {
+                            event.preventDefault();
+                        }}
+                        onChange={async (event) => {
                             const selectedOption =
                                 event.target.options[
                                     event.target.selectedIndex
                                 ];
-                            SavePreviousCharKeybind(
-                                parseInt(selectedOption.dataset.key), // Use data-key for keycode
-                                selectedOption.value // Use value for key name
-                            );
-                            fetchSavedKeys();
+
+                            try {
+                                await SavePreviousCharKeybind(
+                                    parseInt(selectedOption.dataset.key),
+                                    selectedOption.value
+                                );
+
+                                fetchSavedKeys();
+                            } catch (error) {
+                                console.error(
+                                    "Error saving keybind or fetching keys:",
+                                    error
+                                );
+                            }
                         }}
                     >
                         {keycodes.map((key) => (
@@ -299,16 +324,28 @@ function App() {
                     <select
                         className="dropdown"
                         value={nextKey}
-                        onChange={(event) => {
+                        onKeyDown={(event) => {
+                            event.preventDefault();
+                        }}
+                        onChange={async (event) => {
                             const selectedOption =
                                 event.target.options[
                                     event.target.selectedIndex
                                 ];
-                            SaveNextCharKeybind(
-                                parseInt(selectedOption.dataset.key), // Use data-key for keycode
-                                selectedOption.value // Use value for key name
-                            );
-                            fetchSavedKeys();
+
+                            try {
+                                await SaveNextCharKeybind(
+                                    parseInt(selectedOption.dataset.key),
+                                    selectedOption.value
+                                );
+
+                                fetchSavedKeys();
+                            } catch (error) {
+                                console.error(
+                                    "Error saving keybind or fetching keys:",
+                                    error
+                                );
+                            }
                         }}
                     >
                         {keycodes.map((key) => (

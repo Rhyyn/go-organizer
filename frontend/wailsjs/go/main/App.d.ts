@@ -17,11 +17,11 @@ export function PauseHook():Promise<void>;
 
 export function ResumeHook():Promise<void>;
 
-export function SaveNextCharKeybind(arg1:number,arg2:string):Promise<void>;
+export function SaveNextCharKeybind(arg1:number,arg2:string):Promise<string>;
 
-export function SavePreviousCharKeybind(arg1:number,arg2:string):Promise<void>;
+export function SavePreviousCharKeybind(arg1:number,arg2:string):Promise<string>;
 
-export function SaveStopOrgaKeyBind(arg1:number,arg2:string):Promise<void>;
+export function SaveStopOrgaKeyBind(arg1:number,arg2:string):Promise<string>;
 
 export function UpdateDofusWindows():Promise<Array<main.WindowInfo>>;
 
