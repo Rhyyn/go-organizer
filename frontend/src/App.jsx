@@ -49,15 +49,6 @@ function App() {
         };
     }, [isActive]);
 
-    function getDofusWindows() {
-        GetDofusWindows().then((result) => {
-            if (result !== null) {
-                setDofusWindows(result);
-                console.log(result);
-            }
-        });
-    }
-
     function getKeyCodes() {
         GetKeycodes().then((result) => {
             const keycodesArray = Object.entries(result).map(
@@ -68,6 +59,15 @@ function App() {
             );
             const sortedList = keycodesArray.sort((a, b) => a.Code - b.Code);
             setKeycodes(sortedList);
+        });
+    }
+
+    function getDofusWindows() {
+        GetDofusWindows().then((result) => {
+            if (result !== null) {
+                setDofusWindows(result);
+                console.log(result);
+            }
         });
     }
 

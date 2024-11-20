@@ -232,46 +232,46 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 		return nil, err
 	}
 
-	for _, charName := range savedOrder {
-		runtime.LogPrintf(a.ctx, "saved char %s", charName)
+	var newOrderKnown []WindowInfo
+	var newOrderUnknown []WindowInfo
+
+	loggedInMap := make(map[string]WindowInfo)
+	for _, char := range loggedInCharacters {
+		loggedInMap[char.CharacterName] = char
 	}
 
-	// map of currrent char names
-	loggedInNames := make([]string, len(loggedInCharacters))
-	for i, window := range loggedInCharacters {
-		loggedInNames[i] = window.CharacterName
-		// runtime.LogPrintf(a.ctx, "char name : %s", window.CharacterName)
+	processed := make(map[string]bool)
+
+	for _, savedChar := range savedOrder {
+		if _, exists := processed[savedChar]; exists {
+			continue
+		}
+
+		if loggedChar, exists := loggedInMap[savedChar]; exists {
+			newOrderKnown = append(newOrderKnown, loggedChar)
+		} else {
+			newOrderUnknown = append(newOrderUnknown, WindowInfo{CharacterName: savedChar})
+		}
+
+		processed[savedChar] = true
 	}
 
-	updatedOrder := a.UpdateOrder(loggedInNames, savedOrder)
-
-	runtime.LogPrintf(a.ctx, "Saved order: %v", savedOrder)
-	runtime.LogPrintf(a.ctx, "Updated order: %v", updatedOrder)
-
-	// create new array of windows base on new order
-	var reorderedWindows []WindowInfo
-	for _, charName := range updatedOrder {
-		for _, window := range loggedInCharacters {
-			if window.CharacterName == charName {
-				reorderedWindows = append(reorderedWindows, window)
-			}
+	for _, loggedChar := range loggedInCharacters {
+		if _, exists := processed[loggedChar.CharacterName]; !exists {
+			newOrderUnknown = append(newOrderUnknown, loggedChar)
 		}
 	}
 
-	// save that new order to the file
-	a.SaveCharacterList(reorderedWindows)
-
-	// for _, charName := range reorderedWindows {
-	// 	runtime.LogPrintf(a.ctx, "charName.CharacterName %s", charName.CharacterName)
-	// }
-
-	// return the array of windows to the frontend
-	return reorderedWindows, nil
+	runtime.LogPrintf(a.ctx, "newOrderKnown.. : %v", newOrderKnown)
+	newOrderKnown = append(newOrderKnown, newOrderUnknown...)
+	return newOrderKnown, nil
 }
 
 // this deletes our section and re create it
 // idk if its a good idea but it works :)
 func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
+	exeDir, _ := getExecutableDir()
+
 	charactersIniFilePath := filepath.Join(exeDir, "characters.ini")
 	iniFile, _, _ := loadINIFile(charactersIniFilePath)
 
@@ -289,7 +289,7 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 	}
 
 	runtime.LogPrint(a.ctx, "Dofus windows order updated successfully!\n")
-
+	a.DofusWindows = dofusWindows
 	return nil
 }
 
@@ -391,33 +391,6 @@ func (a *App) GetDofusWindows() []WindowInfo {
 	return nil
 }
 
-// Used by the frontend to update the array
-// func (a *App) UpdateDofusWindows() []WindowInfo {
-// 	a.DofusWindows = []WindowInfo{}
-// 	w32.EnumWindows(func(hwnd w32.HWND) bool {
-// 		return EnumWindowsCallback(a.ctx, hwnd, a)
-// 	})
-// 	if len(a.DofusWindows) > 0 {
-// 		return a.DofusWindows
-// 	}
-// 	return nil
-// }
-
 func (a *App) UpdateDofusWindows() {
 	runtime.EventsEmit(a.ctx, "updatedCharacterOrder", a.DofusWindows)
 }
-
-// Should not be needed, In theory at leastt
-// Used to grant ourselves the right to SetForeground
-// Very very very unreliable anyway
-// func AllowSetForegroundWindow(pid uint32) error {
-// 	user32 := windows.NewLazySystemDLL("user32.dll")
-// 	proc := user32.NewProc("AllowSetForegroundWindow")
-
-// 	// Call the function with the process ID
-// 	r1, _, err := proc.Call(uintptr(pid))
-// 	if r1 == 0 {
-// 		return fmt.Errorf("AllowSetForegroundWindow failed: %v", err)
-// 	}
-// 	return nil
-// }
