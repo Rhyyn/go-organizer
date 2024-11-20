@@ -7,7 +7,6 @@ import { EventsEmit, EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
 import "./App.css";
 import {
     GetDofusWindows,
-    UpdateDofusWindows,
     UpdateDofusWindowsOrder,
     PauseHook,
     ResumeHook,
@@ -16,6 +15,7 @@ import {
     SavePreviousCharKeybind,
     SaveNextCharKeybind,
     GetAllKeyBindings,
+    SaveCharacterList,
 } from "../wailsjs/go/main/App";
 
 function App() {
@@ -39,10 +39,22 @@ function App() {
         });
     }
 
+    useEffect(() => {
+        EventsOn("updatedCharacterOrder", (newState) => {
+            setDofusWindows(newState);
+        });
+
+        return () => {
+            EventsOff("updatedCharacterOrder");
+        };
+    }, [isActive]);
+
     function getDofusWindows() {
-        UpdateDofusWindows().then((result) => {
-            const sortedList = [...result].sort((a, b) => a.Order - b.Order);
-            setDofusWindows(sortedList);
+        GetDofusWindows().then((result) => {
+            if (result !== null) {
+                setDofusWindows(result);
+                console.log(result);
+            }
         });
     }
 
@@ -59,10 +71,29 @@ function App() {
         });
     }
 
-    function saveOrder() {
-        UpdateDofusWindowsOrder(dofusWindows);
-        GetDofusWindows().then(updateWindows);
+    async function saveOrder() {
         console.log("updating order..");
+        await SaveCharacterList(dofusWindows).catch((error) => {
+            // If Go returned an error, handle it here
+            console.error("Failed to save Dofus windows order:", error);
+        });
+        // GetDofusWindows().then(updateWindows);
+        console.log("updatedorder.. to :");
+        console.log(dofusWindows);
+    }
+
+    async function loadOrder() {
+        console.log("updating order..");
+        await UpdateDofusWindowsOrder(dofusWindows)
+            .then((result) => {
+                setDofusWindows(result);
+            })
+            .catch((error) => {
+                // If Go returned an error, handle it here
+                console.error("Failed to update Dofus windows order:", error);
+            });
+        // GetDofusWindows().then(updateWindows);
+        console.log("updatedorder.. to :");
         console.log(dofusWindows);
     }
 
@@ -88,17 +119,12 @@ function App() {
         }
     };
 
-    const updateWindows = (windows) => {
-        setDofusWindows(windows); // Update the state with the list of windows
-    };
+    // const updateWindows = (windows) => {
+    //     setDofusWindows(windows); // Update the state with the list of windows
+    // };
 
     useEffect(() => {
         if (isFirst) {
-            GetDofusWindows()
-                .then(updateWindows)
-                .catch((error) => {
-                    console.error("Error fetching Dofus windows:", error); // Error handling
-                });
             getKeyCodes();
             fetchSavedKeys();
         }
@@ -134,6 +160,9 @@ function App() {
             <div className="menu-container">
                 <button className="btn" onClick={getDofusWindows}>
                     Refresh
+                </button>
+                <button className="btn" onClick={loadOrder}>
+                    Load
                 </button>
                 <button className="btn" onClick={saveOrder}>
                     Save

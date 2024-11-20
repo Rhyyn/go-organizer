@@ -17,14 +17,18 @@ export function PauseHook():Promise<void>;
 
 export function ResumeHook():Promise<void>;
 
+export function SaveCharacterList(arg1:Array<main.WindowInfo>):Promise<void>;
+
 export function SaveNextCharKeybind(arg1:number,arg2:string):Promise<string>;
 
 export function SavePreviousCharKeybind(arg1:number,arg2:string):Promise<string>;
 
 export function SaveStopOrgaKeyBind(arg1:number,arg2:string):Promise<string>;
 
-export function UpdateDofusWindows():Promise<Array<main.WindowInfo>>;
+export function UpdateDofusWindows():Promise<void>;
 
-export function UpdateDofusWindowsOrder(arg1:Array<main.WindowInfo>):Promise<void>;
+export function UpdateDofusWindowsOrder(arg1:Array<main.WindowInfo>):Promise<Array<main.WindowInfo>>;
 
 export function UpdateMainHookState():Promise<void>;
+
+export function UpdateOrder(arg1:Array<string>,arg2:Array<string>):Promise<Array<string>>;

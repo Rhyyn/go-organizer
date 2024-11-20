@@ -30,6 +30,10 @@ export function ResumeHook() {
   return window['go']['main']['App']['ResumeHook']();
 }
 
+export function SaveCharacterList(arg1) {
+  return window['go']['main']['App']['SaveCharacterList'](arg1);
+}
+
 export function SaveNextCharKeybind(arg1, arg2) {
   return window['go']['main']['App']['SaveNextCharKeybind'](arg1, arg2);
 }
@@ -52,4 +56,8 @@ export function UpdateDofusWindowsOrder(arg1) {
 
 export function UpdateMainHookState() {
   return window['go']['main']['App']['UpdateMainHookState']();
+}
+
+export function UpdateOrder(arg1, arg2) {
+  return window['go']['main']['App']['UpdateOrder'](arg1, arg2);
 }

@@ -12,7 +12,6 @@ import (
 )
 
 // HOOK
-// Need a button to start/stop
 func (a *App) addMainHook() {
 	chanHook := hook.Start()
 	defer hook.End()
@@ -60,7 +59,7 @@ func (a *App) addMainHook() {
 			var currentIndex int
 			currentIndex, found := windowTitleMap[activeWindowTitle]
 			if !found {
-				runtime.LogPrintf(a.ctx, "Current window not dofus")
+				// runtime.LogPrintf(a.ctx, "Current window not dofus")
 				continue
 			}
 
@@ -129,92 +128,6 @@ func (a *App) addMainHook() {
 
 	}
 }
-
-// func (a *App) addPauseHook() {
-// 	pauseHook := hook.Start()
-// 	defer hook.End()
-
-// 	var isKeyPressed bool
-
-// 	for ev := range pauseHook {
-// 		if ev.Rawcode == uint16(stopOrganizerKeybind) {
-// 			if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold && !isKeyPressed {
-// 				isKeyPressed = true
-// 				runtime.LogPrint(a.ctx, "invert bool")
-// 				isMainHookActive = !isMainHookActive
-// 				runtime.LogPrintf(a.ctx, "isMainHookActive : %t", isMainHookActive)
-// 			}
-
-// 			if ev.Kind == hook.KeyUp {
-// 				runtime.LogPrint(a.ctx, "up")
-// 				isKeyPressed = false
-// 			}
-// 		}
-// 	}
-// }
-
-// TogglePauseHook
-// This is abandonned for now because it makes the app Freeze for no reason
-
-// func (a *App) StartToggleHook(stopChan chan struct{}) {
-// 	toggleHook := hook.Start()
-// 	defer hook.End()
-
-// 	go func() {
-// 		for ev := range toggleHook {
-// 			if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold {
-// 				if _, found := blacklist[ev.Rawcode]; found {
-// 					continue
-// 				} else {
-// 					if keyName, found := Keycode[ev.Rawcode]; found {
-// 						// Process the key event
-// 						toggleListenerRawCode = ev.Rawcode
-// 						a.UpdateToggleKeybind(keyName)
-// 						runtime.LogPrintf(a.ctx, "Captured event: %v\n", ev)
-
-// 						// After capturing, close the stop channel to signal stopping
-// 						close(stopChan)
-// 						return
-// 					} else {
-// 						runtime.LogPrintf(a.ctx, "Unknown event with Rawcode: %d\n", ev.Rawcode)
-// 						a.UpdateToggleKeybind("Invalid.. Try again")
-// 					}
-// 				}
-// 			} else if ev.Kind == hook.MouseDown || ev.Kind == hook.MouseHold {
-// 				runtime.LogPrintf(a.ctx, "Captured event: %v\n", ev)
-// 				if _, found := blacklist[ev.Button]; found {
-// 					continue
-// 				} else {
-// 					if keyName, found := Keycode[ev.Button]; found {
-// 						toggleListenerRawCode = ev.Rawcode
-// 						a.UpdateToggleKeybind(keyName)
-// 						runtime.LogPrintf(a.ctx, "Captured event: %v\n", ev)
-
-// 						// After capturing, close the stop channel to signal stopping
-// 						close(stopChan)
-// 						return
-// 					} else {
-// 						fmt.Printf("Unknown event with Rawcode: %d\n", ev.Rawcode)
-// 						a.UpdateToggleKeybind("Invalid.. Try again")
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}()
-
-// func (a *App) AddPauseHook() {
-// 	chanHook := hook.Start()
-// 	defer hook.End()
-
-// 	for ev := range chanHook {
-// 		if ev.Kind == hook.KeyHold || ev.Kind == hook.KeyDown || ev.Kind == hook.KeyUp ||
-// 			ev.Kind == hook.MouseDown || ev.Kind == hook.MouseUp {
-// 			toggleListenerKeybind = string(ev.Keychar)
-// 			toggleListenerRawCode = int(ev.Rawcode)
-// 			break
-// 		}
-// 	}
-// }
 
 // TODO : Extract logic from those 3
 
