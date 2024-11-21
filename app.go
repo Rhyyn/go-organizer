@@ -43,6 +43,11 @@ func NewApp() *App {
 	return &App{}
 }
 
+type Keybinds struct {
+	KeyName string
+	KeyCode int32
+}
+
 var (
 	charactersIniFilePath         string
 	configFilePath                string
@@ -54,24 +59,16 @@ var (
 	configFile                    *ini.File
 	exeDir                        string
 	stopOrganizerKeybind          int32
+	stopOrganizerKeybindString    string
 	previousCharKeybind           int32
 	nextCharKeybind               int32
+	isAlwaysOnTop                 bool
+	keybindsList                  map[string]Keybinds
 )
 
 const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
-
-func (a *App) UpdateMainHookState() {
-	runtime.EventsEmit(a.ctx, "updateMainHookState", isMainHookActive)
-}
-
-func (a *App) GetToggleListenerKeybind() string {
-	if len(toggleListenerKeybind) > 0 {
-		return toggleListenerKeybind
-	}
-	return "Invalid Keybind"
-}
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
@@ -102,18 +99,42 @@ func (a *App) startup(ctx context.Context) {
 	}
 
 	charactersIniFilePath = filepath.Join(exeDir, "characters.ini")
-	// check if characters ini file exists
-	// iniFile, err, exists := loadINIFile(charactersIniFilePath)
-	// runtime.LogPrintf(a.ctx, "characters exists %t", exists)
-	// if err != nil {
-	// 	runtime.LogError(a.ctx, "Error with the ini file")
-	// }
 
 	// Initialize our array
 	a.refreshAndUpdateCharacterList(exists)
 
+	keybindsList = make(map[string]Keybinds)
+	a.GetAllKeyBindings()
+
 	// Start main hook for input listener
-	a.addMainHook()
+	a.StartHook()
+
+	// Start of our Observers
+	runtime.EventsOn(a.ctx, "KeybindsUpdate", func(optionalData ...interface{}) {
+		runtime.LogPrint(a.ctx, "Keybinds Updated...  Restarting Hooks with updated keybinds...")
+
+		a.StopHook()
+
+		a.StartHook()
+	})
+
+	// a.addMainHook()
+}
+
+func (a *App) SetAlwaysOnTop() {
+	isAlwaysOnTop = !isAlwaysOnTop
+	runtime.WindowSetAlwaysOnTop(a.ctx, isAlwaysOnTop)
+}
+
+func (a *App) UpdateMainHookState() {
+	runtime.EventsEmit(a.ctx, "updateMainHookState", isMainHookActive)
+}
+
+func (a *App) GetToggleListenerKeybind() string {
+	if len(toggleListenerKeybind) > 0 {
+		return toggleListenerKeybind
+	}
+	return "Invalid Keybind"
 }
 
 func (a *App) refreshAndUpdateCharacterList(exists bool) {

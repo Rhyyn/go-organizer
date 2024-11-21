@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-vgo/robotgo"
@@ -10,6 +11,48 @@ import (
 	hook "github.com/robotn/gohook"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+var isMyHookRunning bool
+
+// need an event to end and restart if key changed
+func (a *App) mainHook() {
+	runtime.LogPrintf(a.ctx, "isMyHookRunning %t", isMyHookRunning)
+
+	if isMyHookRunning {
+
+		hook.Register(hook.KeyHold, []string{keybindsList["StopOrganizer"].KeyName}, func(e hook.Event) {
+			runtime.LogPrintf(a.ctx, "StopOrganizer key : pressed %v\n ------------\n", e)
+		})
+
+		hook.Register(hook.KeyHold, []string{keybindsList["PreviousChar"].KeyName}, func(e hook.Event) {
+			runtime.LogPrintf(a.ctx, "PreviousChar key : pressed %v\n ------------\n ", e)
+		})
+
+		hook.Register(hook.KeyHold, []string{keybindsList["NextChar"].KeyName}, func(e hook.Event) {
+			runtime.LogPrintf(a.ctx, "NextChar key : pressed %v\n ------------\n ", e)
+		})
+
+		s := hook.Start()
+		<-hook.Process(s)
+	} else {
+		hook.End()
+		runtime.LogPrint(a.ctx, "hook ended..")
+	}
+}
+
+// Start Main Hook
+func (a *App) StartHook() {
+	runtime.LogPrint(a.ctx, "Starting hook..")
+	isMyHookRunning = true
+	a.mainHook()
+}
+
+// Stop Main Hook
+func (a *App) StopHook() {
+	runtime.LogPrint(a.ctx, "Stopping hook..")
+	isMyHookRunning = false
+	a.mainHook()
+}
 
 // HOOK
 func (a *App) addMainHook() {
@@ -20,12 +63,13 @@ func (a *App) addMainHook() {
 	var lastToggleTime time.Time
 
 	for ev := range chanHook {
-
+		time.Sleep(10 * time.Millisecond)
 		if ev.Rawcode == uint16(stopOrganizerKeybind) {
+			runtime.LogPrintf(a.ctx, "ev : %v", ev.Kind)
 			now := time.Now()
 
 			if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold && !isKeyPressed {
-				if !isKeyPressed && now.Sub(lastToggleTime) > 200*time.Millisecond {
+				if !isKeyPressed && now.Sub(lastToggleTime) > 100*time.Millisecond {
 					lastToggleTime = now
 
 					isKeyPressed = true
@@ -74,7 +118,7 @@ func (a *App) addMainHook() {
 						var nextWindow win.HWND
 						nextIndex := (currentIndex + 1) % len(a.DofusWindows)
 						nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-						a.winActivate(w32.HWND(nextWindow))
+						a.WinActivate(w32.HWND(nextWindow))
 						// for i, window := range a.DofusWindows {
 						// 	if window.Title == activeWindowTitle {
 						// 		runtime.LogPrintf(a.ctx, "current char : %s", a.DofusWindows[i].CharacterName)
@@ -120,7 +164,7 @@ func (a *App) addMainHook() {
 						// Reverse the index logic, decrement and wrap around if less than 0
 						nextIndex := (currentIndex - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
 						nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-						a.winActivate(w32.HWND(nextWindow))
+						a.WinActivate(w32.HWND(nextWindow))
 					}
 				}
 			}
@@ -129,61 +173,34 @@ func (a *App) addMainHook() {
 	}
 }
 
-// TODO : Extract logic from those 3
-
-func (a *App) SaveStopOrgaKeyBind(keycode int32, keyname string) (string, error) {
+// Generic SaveKeybind
+func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (string, error) {
 	configFile, _, _ = loadINIFile(configFilePath)
 	section, _ := configFile.GetSection("KeyBindings")
 
 	value := fmt.Sprintf("%d,%s", keycode, keyname)
 
-	section.Key("StopOrganizer").SetValue(value)
+	section.Key(keybindName).SetValue(value)
 
 	err := configFile.SaveTo(configFilePath)
 	if err != nil {
 		runtime.LogPrintf(a.ctx, "Error saving INI file: %v", err)
 		return "", err
 	}
+
+	keybindsList[keybindName] = Keybinds{
+		KeyCode: keycode,
+		KeyName: strings.ToLower(keyname),
+	}
+
+	runtime.LogPrintf(a.ctx, "Updated Keybinds to : %v", keybindsList)
+	a.KeybindUpdatedEvent()
+
 	return "sucess", nil
 }
 
-func (a *App) SavePreviousCharKeybind(keycode int32, keyname string) (string, error) {
-	configFile, _, _ = loadINIFile(configFilePath)
-	// ingore err for now cuz I CBA
-	section, _ := configFile.GetSection("KeyBindings")
-	value := fmt.Sprintf("%d,%s", keycode, keyname)
-
-	section.Key("PreviousChar").SetValue(value)
-
-	err := configFile.SaveTo(configFilePath)
-	if err != nil {
-		runtime.LogPrintf(a.ctx, "Error saving INI file: %v", err)
-		return "", err
-	}
-	return "success", nil
-}
-
-func (a *App) SaveNextCharKeybind(keycode int32, keyname string) (string, error) {
-	configFile, _, _ = loadINIFile(configFilePath)
-	section, _ := configFile.GetSection("KeyBindings")
-
-	value := fmt.Sprintf("%d,%s", keycode, keyname)
-
-	section.Key("NextChar").SetValue(value)
-
-	err := configFile.SaveTo(configFilePath)
-	if err != nil {
-		runtime.LogPrintf(a.ctx, "Error saving INI file: %v", err)
-		return "", err
-	}
-	return "sucess", nil
-}
-
-func (a *App) GetAllKeyBindings() (map[string]struct {
-	KeyCode int32
-	KeyName string
-}, error,
-) {
+// no error handling
+func (a *App) GetAllKeyBindings() map[string]Keybinds {
 	// Reload the config file
 	configFile, _, _ := loadINIFile(configFilePath)
 
@@ -193,7 +210,7 @@ func (a *App) GetAllKeyBindings() (map[string]struct {
 	section, err := configFile.GetSection("KeyBindings")
 	if err != nil {
 		runtime.LogErrorf(a.ctx, "Error getting section 'KeyBindings': %v", err)
-		return nil, err
+		return nil
 	}
 
 	// Function to parse the key value
@@ -217,46 +234,43 @@ func (a *App) GetAllKeyBindings() (map[string]struct {
 	}
 
 	// Read all the keys
-	keys := map[string]struct {
-		KeyCode int32
-		KeyName string
-	}{}
+	// keys := map[string]struct {
+	// 	KeyCode int32
+	// 	KeyName string
+	// }{}
 
 	// Get StopOrganizer key
 	stopCode, stopName, err := parseKey("StopOrganizer")
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	keys["StopOrganizer"] = struct {
-		KeyCode int32
-		KeyName string
-	}{stopCode, stopName}
+	keybindsList["StopOrganizer"] = Keybinds{
+		KeyCode: stopCode,
+		KeyName: strings.ToLower(stopName),
+	}
 
 	// Get PreviousChar key
 	prevCode, prevName, err := parseKey("PreviousChar")
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	keys["PreviousChar"] = struct {
-		KeyCode int32
-		KeyName string
-	}{prevCode, prevName}
+	keybindsList["PreviousChar"] = Keybinds{
+		KeyCode: prevCode,
+		KeyName: strings.ToLower(prevName),
+	}
 
 	// Get NextChar key
 	nextCode, nextName, err := parseKey("NextChar")
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	keys["NextChar"] = struct {
-		KeyCode int32
-		KeyName string
-	}{nextCode, nextName}
+	keybindsList["NextChar"] = Keybinds{
+		KeyCode: nextCode,
+		KeyName: strings.ToLower(nextName),
+	}
 
-	stopOrganizerKeybind = keys["StopOrganizer"].KeyCode
-	previousCharKeybind = keys["PreviousChar"].KeyCode
-	nextCharKeybind = keys["NextChar"].KeyCode
-
-	return keys, nil
+	runtime.LogPrintf(a.ctx, "Update keybinds to %v", keybindsList)
+	return keybindsList
 }
 
 func (a *App) PauseHook() {

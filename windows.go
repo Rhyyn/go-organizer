@@ -22,7 +22,7 @@ var (
 
 var ATTEMPT_SET_FORE bool
 
-func (a *App) winActivate(targetWindow w32.HWND) w32.HWND {
+func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
 	origForegroundWindow := a.getForegroundWindow()
 	// Check if our window is valid, returns original if not
 	if !a.isWindowValid(targetWindow) {

@@ -22,6 +22,10 @@ export function GetToggleListenerKeybind() {
   return window['go']['main']['App']['GetToggleListenerKeybind']();
 }
 
+export function KeybindUpdatedEvent() {
+  return window['go']['main']['App']['KeybindUpdatedEvent']();
+}
+
 export function PauseHook() {
   return window['go']['main']['App']['PauseHook']();
 }
@@ -34,16 +38,20 @@ export function SaveCharacterList(arg1) {
   return window['go']['main']['App']['SaveCharacterList'](arg1);
 }
 
-export function SaveNextCharKeybind(arg1, arg2) {
-  return window['go']['main']['App']['SaveNextCharKeybind'](arg1, arg2);
+export function SaveKeybind(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SaveKeybind'](arg1, arg2, arg3);
 }
 
-export function SavePreviousCharKeybind(arg1, arg2) {
-  return window['go']['main']['App']['SavePreviousCharKeybind'](arg1, arg2);
+export function SetAlwaysOnTop() {
+  return window['go']['main']['App']['SetAlwaysOnTop']();
 }
 
-export function SaveStopOrgaKeyBind(arg1, arg2) {
-  return window['go']['main']['App']['SaveStopOrgaKeyBind'](arg1, arg2);
+export function StartHook() {
+  return window['go']['main']['App']['StartHook']();
+}
+
+export function StopHook() {
+  return window['go']['main']['App']['StopHook']();
 }
 
 export function UpdateDofusWindows() {
@@ -60,4 +68,8 @@ export function UpdateMainHookState() {
 
 export function UpdateOrder(arg1, arg2) {
   return window['go']['main']['App']['UpdateOrder'](arg1, arg2);
+}
+
+export function WinActivate(arg1) {
+  return window['go']['main']['App']['WinActivate'](arg1);
 }

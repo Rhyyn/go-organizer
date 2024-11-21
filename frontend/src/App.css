@@ -127,10 +127,11 @@
     margin: 5px;
     font-size: 1.3rem;
     padding: 5px;
-    background-color: #434343;
+    background-color: #4b4b4b;
     border-radius: 4px;
     height: 50px;
     align-items: center;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .icon-container {
@@ -151,6 +152,8 @@
 .character-name {
     margin-right: 10px;
     margin-left: 5px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .class-name {
@@ -175,7 +178,7 @@
     width: 28px;
 }
 
-.move-button:hover {
+.move-button:not(:disabled):hover {
     background-color: #15beca;
     color: #333333;
 }
@@ -197,15 +200,24 @@
 input[type="checkbox"] {
     transform: scale(1.5);
     margin-left: 10px;
+    outline: none;
 }
 
-label {
+/* label {
     font-size: 18px;
     font-weight: bold;
     background-color: #434343;
     padding: 5px;
 
     border-radius: 4px;
+} */
+
+.toggle-label {
+    width: 65%;
+    padding: 5px;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .toggle-label.paused {
@@ -213,7 +225,7 @@ label {
     color: #bebebe;
 }
 .toggle-label.active {
-    color: #bebebe;
+    color: white;
     background-color: #434343;
     border: 2px solid #15beca;
 }
@@ -242,8 +254,23 @@ label {
     display: flex;
     justify-content: space-between;
     margin: 2px;
+    padding: 8px;
+    background-color: #4b4b4b;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .dropdown {
     outline: none;
+    cursor: pointer;
+}
+
+.dropdown:hover {
+    outline: none;
+    cursor: pointer;
+}
+
+.dropdown-option:hover {
+    cursor: pointer;
 }

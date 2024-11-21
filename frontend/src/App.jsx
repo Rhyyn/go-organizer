@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import classIcons from "./ClassIcons";
 import upArrow from "./assets/GUI_icons/arrow-up.png";
 import downArrow from "./assets/GUI_icons/arrow-down.png";
-import { EventsEmit, EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
+import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
 import "./App.css";
 import {
     GetDofusWindows,
@@ -11,33 +11,30 @@ import {
     PauseHook,
     ResumeHook,
     GetKeycodes,
-    SaveStopOrgaKeyBind,
-    SavePreviousCharKeybind,
-    SaveNextCharKeybind,
+    SaveKeybind,
     GetAllKeyBindings,
     SaveCharacterList,
+    WinActivate,
+    SetAlwaysOnTop,
+    StopHook,
 } from "../wailsjs/go/main/App";
 
 function App() {
     const [isFirst, setIsFirst] = useState(true);
     const [isActive, setIsActive] = useState(false);
-    const [isShiftActive, setIsShiftActive] = useState(false);
-    const [isAltActive, setIsAltActive] = useState(false);
     const [dofusWindows, setDofusWindows] = useState([]);
     const [keycodes, setKeycodes] = useState([]);
 
     const [previousKey, setPreviousKey] = useState("");
     const [nextKey, setNextKey] = useState("");
-    const [stopOrganizerKey, setstopOrganizerKey] = useState("");
+    const [stopOrganizerKey, setStopOrganizerKey] = useState("");
 
-    function fetchSavedKeys() {
-        GetAllKeyBindings().then((result) => {
-            console.log(result["StopOrganizer"].KeyName);
-            setstopOrganizerKey(result["StopOrganizer"].KeyName);
-            setNextKey(result["NextChar"].KeyName);
-            setPreviousKey(result["PreviousChar"].KeyName);
-        });
-    }
+    // EventsOn("KeybindsUpdate", (updatedKeybinds) => {
+    //     console.log("event received", updatedKeybinds);
+    //     setStopOrganizerKey(updatedKeybinds["StopOrganizer"].KeyName);
+    //     setNextKey(updatedKeybinds["NextChar"].KeyName);
+    //     setPreviousKey(updatedKeybinds["PreviousChar"].KeyName);
+    // });
 
     useEffect(() => {
         EventsOn("updatedCharacterOrder", (newState) => {
@@ -122,10 +119,26 @@ function App() {
     useEffect(() => {
         if (isFirst) {
             getKeyCodes();
-            fetchSavedKeys();
+            FetchKeybinds();
         }
         setIsFirst(false);
     }, [isFirst]);
+
+    // Fetch keybinds
+    const FetchKeybinds = () => {
+        GetAllKeyBindings().then((result) => {
+            setStopOrganizerKey(result["StopOrganizer"].KeyName.toUpperCase());
+            setNextKey(result["NextChar"].KeyName.toUpperCase());
+            setPreviousKey(result["PreviousChar"].KeyName.toUpperCase());
+        });
+    };
+
+    // Call backend to save new keybind then fetch
+    async function saveKeybinds(keycode, keyname, keybindName) {
+        await SaveKeybind(keycode, keyname, keybindName).then(() => {
+            FetchKeybinds();
+        });
+    }
 
     const handleActiveToggle = () => {
         if (!isActive) {
@@ -153,22 +166,32 @@ function App() {
                 <button className="btn" onClick={getDofusWindows}>
                     Fetch
                 </button>
+                <button className="btn" onClick={SetAlwaysOnTop}>
+                    Pin to top
+                </button>
                 <button className="btn" onClick={loadOrder}>
                     Order
                 </button>
                 <button className="btn" onClick={saveOrder}>
                     Save
                 </button>
+                <button className="btn" onClick={StopHook}>
+                    StopHook
+                </button>
             </div>
             <div id="dofusWindowList">
                 {dofusWindows.length === 0 ? (
-                    <p>No Dofus windows found.</p>
+                    <p>No Dofus windows found. Use Fetch</p>
                 ) : (
                     <div className="windows-container">
                         {dofusWindows.map((window, index) => (
                             <div className="window-item" key={index}>
                                 <div className="left-container">
-                                    <div className="character-name">
+                                    <div
+                                        className="character-name"
+                                        title={`Click to activate ${window.CharacterName}`}
+                                        onClick={() => WinActivate(window.hwnd)}
+                                    >
                                         {window.CharacterName}
                                     </div>
                                     |
@@ -191,6 +214,7 @@ function App() {
                                 </div>
                                 <div className="move-buttons-container">
                                     <button
+                                        title="Move Up"
                                         className="move-button"
                                         onClick={() => moveUp(index)}
                                         disabled={index === 0}
@@ -203,6 +227,7 @@ function App() {
                                         />
                                     </button>
                                     <button
+                                        title="Move Down"
                                         className="move-button"
                                         onClick={() => moveDown(index)}
                                         disabled={
@@ -229,7 +254,7 @@ function App() {
                             isActive ? "active" : "paused"
                         }`}
                     >
-                        Organizer is : {isActive ? "Active" : "Paused"}
+                        Organizer is : {isActive ? "Active" : "Off"}
                         <input
                             className={`custom-checkbox ${
                                 isActive ? "active" : "paused"
@@ -239,21 +264,11 @@ function App() {
                             onChange={handleActiveToggle}
                         />
                     </label>
-                    {/* <button
-                        className={`btn2 ${
-                            isToggleListening
-                                ? "toggle-active"
-                                : "toggle-paused"
-                        }`}
-                        onClick={handleToggleKeybind}
-                    >
-                        {defaultKeybindText}
-                    </button> */}
                 </div>
             </div>
             <div className="bottom-container">
                 <label className="dropdown-label">
-                    Stop Organizer :
+                    Toggle Organizer :
                     <select
                         className="dropdown"
                         value={stopOrganizerKey}
@@ -268,12 +283,11 @@ function App() {
                                 ];
 
                             try {
-                                await SaveStopOrgaKeyBind(
+                                await saveKeybinds(
                                     parseInt(selectedOption.dataset.key),
-                                    selectedOption.value
+                                    selectedOption.value.toLowerCase(),
+                                    "StopOrganizer"
                                 );
-
-                                fetchSavedKeys();
                             } catch (error) {
                                 console.error(
                                     "Error saving keybind or fetching keys:",
@@ -285,8 +299,9 @@ function App() {
                         {keycodes.map((key) => (
                             <option
                                 key={key.Code}
-                                value={key.Name} // Set the value to key.Name
-                                data-key={key.Code} // Set data-key to key.Code
+                                value={key.Name}
+                                data-key={key.Code}
+                                className="dropdown-option"
                             >
                                 {key.Name}
                             </option>
@@ -294,7 +309,7 @@ function App() {
                     </select>
                 </label>
                 <label className="dropdown-label">
-                    Previous :
+                    Previous Character :
                     <select
                         className="dropdown"
                         value={previousKey}
@@ -308,12 +323,11 @@ function App() {
                                 ];
 
                             try {
-                                await SavePreviousCharKeybind(
+                                await saveKeybinds(
                                     parseInt(selectedOption.dataset.key),
-                                    selectedOption.value
+                                    selectedOption.value.toLowerCase(),
+                                    "PreviousChar"
                                 );
-
-                                fetchSavedKeys();
                             } catch (error) {
                                 console.error(
                                     "Error saving keybind or fetching keys:",
@@ -325,8 +339,9 @@ function App() {
                         {keycodes.map((key) => (
                             <option
                                 key={key.Code}
-                                value={key.Name} // Set the value to key.Name
-                                data-key={key.Code} // Set data-key to key.Code
+                                value={key.Name}
+                                data-key={key.Code}
+                                className="dropdown-option"
                             >
                                 {key.Name}
                             </option>
@@ -334,7 +349,7 @@ function App() {
                     </select>
                 </label>
                 <label className="dropdown-label">
-                    Next :
+                    Next Character :
                     <select
                         className="dropdown"
                         value={nextKey}
@@ -348,12 +363,11 @@ function App() {
                                 ];
 
                             try {
-                                await SaveNextCharKeybind(
+                                await saveKeybinds(
                                     parseInt(selectedOption.dataset.key),
-                                    selectedOption.value
+                                    selectedOption.value.toLowerCase(),
+                                    "NextChar"
                                 );
-
-                                fetchSavedKeys();
                             } catch (error) {
                                 console.error(
                                     "Error saving keybind or fetching keys:",
@@ -365,8 +379,9 @@ function App() {
                         {keycodes.map((key) => (
                             <option
                                 key={key.Code}
-                                value={key.Name} // Set the value to key.Name
-                                data-key={key.Code} // Set data-key to key.Code
+                                value={key.Name}
+                                data-key={key.Code}
+                                className="dropdown-option"
                             >
                                 {key.Name}
                             </option>
