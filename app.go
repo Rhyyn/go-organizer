@@ -264,6 +264,7 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 
 	runtime.LogPrintf(a.ctx, "newOrderKnown.. : %v", newOrderKnown)
 	newOrderKnown = append(newOrderKnown, newOrderUnknown...)
+	a.DofusWindows = newOrderKnown
 	return newOrderKnown, nil
 }
 
