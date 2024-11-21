@@ -129,19 +129,33 @@
     padding: 5px;
     background-color: #434343;
     border-radius: 4px;
+    height: 50px;
+    align-items: center;
+}
+
+.icon-container {
+    margin-right: 10px;
+}
+
+.class-icon {
+    height: 45px;
+    padding-top: 3px;
 }
 
 .left-container {
     width: 80%;
     display: flex;
     justify-content: left;
+    align-items: center;
 }
 .character-name {
     margin-right: 10px;
+    margin-left: 5px;
 }
 
 .class-name {
     margin-left: 10px;
+    margin-right: 10px;
 }
 
 .move-button {

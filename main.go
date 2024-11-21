@@ -28,7 +28,7 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
-		DisableResize: true,
+		DisableResize: false,
 	})
 	if err != nil {
 		println("Error:", err.Error())

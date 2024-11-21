@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 // import logo from './assets/images/logo-universal.png';
-import logo from "./assets/CLASSES_icons/logo-sram.png";
+import classIcons from "./ClassIcons";
 import upArrow from "./assets/GUI_icons/arrow-up.png";
 import downArrow from "./assets/GUI_icons/arrow-down.png";
 import { EventsEmit, EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
@@ -119,10 +119,6 @@ function App() {
         }
     };
 
-    // const updateWindows = (windows) => {
-    //     setDofusWindows(windows); // Update the state with the list of windows
-    // };
-
     useEffect(() => {
         if (isFirst) {
             getKeyCodes();
@@ -130,10 +126,6 @@ function App() {
         }
         setIsFirst(false);
     }, [isFirst]);
-
-    const logList = () => {
-        console.log(dofusWindows);
-    };
 
     const handleActiveToggle = () => {
         if (!isActive) {
@@ -159,35 +151,15 @@ function App() {
             {/* <img src={logo} id="logo" alt="logo" /> */}
             <div className="menu-container">
                 <button className="btn" onClick={getDofusWindows}>
-                    Refresh
+                    Fetch
                 </button>
                 <button className="btn" onClick={loadOrder}>
-                    Load
+                    Order
                 </button>
                 <button className="btn" onClick={saveOrder}>
                     Save
                 </button>
-                {/* <button className="btn">Previous</button>
-                <button className="btn">Next</button> */}
             </div>
-            {/* <div className="sub-menu-container">
-                <label className="sub-btn-text">
-                    Shift
-                    <input
-                        type="checkbox"
-                        checked={isShiftActive}
-                        onChange={() => handleModifierToggle("shift")}
-                    />
-                </label>
-                <label className="sub-btn-text">
-                    Alt
-                    <input
-                        type="checkbox"
-                        checked={isAltActive}
-                        onChange={() => handleModifierToggle("alt")}
-                    />
-                </label>
-            </div> */}
             <div id="dofusWindowList">
                 {dofusWindows.length === 0 ? (
                     <p>No Dofus windows found.</p>
@@ -203,6 +175,19 @@ function App() {
                                     <div className="class-name">
                                         {window.Class}
                                     </div>
+                                </div>
+                                <div className="icon-container">
+                                    <img
+                                        className="class-icon"
+                                        src={
+                                            classIcons[
+                                                window.Class.toLowerCase()
+                                            ] || classIcons.default
+                                        }
+                                        alt={`${
+                                            window.Class || "Default"
+                                        } Icon`}
+                                    ></img>
                                 </div>
                                 <div className="move-buttons-container">
                                     <button
