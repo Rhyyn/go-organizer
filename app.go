@@ -249,8 +249,9 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 
 		if loggedChar, exists := loggedInMap[savedChar]; exists {
 			newOrderKnown = append(newOrderKnown, loggedChar)
+			processed[savedChar] = true
 		} else {
-			newOrderUnknown = append(newOrderUnknown, WindowInfo{CharacterName: savedChar})
+			processed[savedChar] = true
 		}
 
 		processed[savedChar] = true
@@ -259,6 +260,7 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 	for _, loggedChar := range loggedInCharacters {
 		if _, exists := processed[loggedChar.CharacterName]; !exists {
 			newOrderUnknown = append(newOrderUnknown, loggedChar)
+			processed[loggedChar.CharacterName] = true
 		}
 	}
 
