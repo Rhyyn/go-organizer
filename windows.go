@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-vgo/robotgo"
 	"github.com/gonutz/w32/v2"
+	"github.com/lxn/win"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/sys/windows"
 )
@@ -21,6 +22,26 @@ var (
 )
 
 var ATTEMPT_SET_FORE bool
+
+// NEED DEBOUNCING
+func (a *App) ActivateNextChar() {
+	isDofus, index := a.IsWindowDofus()
+	if isDofus {
+		nextIndex := (index + 1) % len(a.DofusWindows)
+		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
+		a.WinActivate(w32.HWND(nextWindow))
+	}
+}
+
+// NEED DEBOUNCING
+func (a *App) ActivatePreviousChar() {
+	isDofus, index := a.IsWindowDofus()
+	if isDofus {
+		nextIndex := (index - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
+		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
+		a.WinActivate(w32.HWND(nextWindow))
+	}
+}
 
 func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
 	origForegroundWindow := a.getForegroundWindow()

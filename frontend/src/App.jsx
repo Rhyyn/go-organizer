@@ -36,6 +36,16 @@ function App() {
     //     setPreviousKey(updatedKeybinds["PreviousChar"].KeyName);
     // });
 
+    // First run of the app to get keycodes/keybinds
+    useEffect(() => {
+        if (isFirst) {
+            getKeyCodes();
+            FetchKeybinds();
+        }
+        setIsFirst(false);
+    }, [isFirst]);
+
+    // TODO: check this
     useEffect(() => {
         EventsOn("updatedCharacterOrder", (newState) => {
             setDofusWindows(newState);
@@ -46,6 +56,7 @@ function App() {
         };
     }, [isActive]);
 
+    // returns an array of {Code: number, Name: string} from our keycodes.go
     function getKeyCodes() {
         GetKeycodes().then((result) => {
             const keycodesArray = Object.entries(result).map(
@@ -59,6 +70,7 @@ function App() {
         });
     }
 
+    // TODO: use event updatedCharacterOrder instead?
     function getDofusWindows() {
         GetDofusWindows().then((result) => {
             if (result !== null) {
@@ -68,17 +80,18 @@ function App() {
         });
     }
 
+    // saves order to our characters.ini
     async function saveOrder() {
-        console.log("updating order..");
         await SaveCharacterList(dofusWindows).catch((error) => {
-            // If Go returned an error, handle it here
+            // need to do this to other functions
             console.error("Failed to save Dofus windows order:", error);
         });
-        // GetDofusWindows().then(updateWindows);
         console.log("updatedorder.. to :");
         console.log(dofusWindows);
     }
 
+    // TODO: Do this auto on fetch
+    // ask back to load order of saved characters
     async function loadOrder() {
         console.log("updating order..");
         await UpdateDofusWindowsOrder(dofusWindows)
@@ -86,7 +99,6 @@ function App() {
                 setDofusWindows(result);
             })
             .catch((error) => {
-                // If Go returned an error, handle it here
                 console.error("Failed to update Dofus windows order:", error);
             });
         // GetDofusWindows().then(updateWindows);
@@ -116,14 +128,6 @@ function App() {
         }
     };
 
-    useEffect(() => {
-        if (isFirst) {
-            getKeyCodes();
-            FetchKeybinds();
-        }
-        setIsFirst(false);
-    }, [isFirst]);
-
     // Fetch keybinds
     const FetchKeybinds = () => {
         GetAllKeyBindings().then((result) => {
@@ -149,13 +153,14 @@ function App() {
         setIsActive(!isActive);
     };
 
+    // Observer to know when organizer is active or not
     useEffect(() => {
-        EventsOn("updateMainHookState", (newState) => {
+        EventsOn("updateOrganizerRunningState", (newState) => {
             setIsActive(newState);
         });
 
         return () => {
-            EventsOff("updateMainHookState");
+            EventsOff("updateOrganizerRunningState");
         };
     }, [isActive]);
 

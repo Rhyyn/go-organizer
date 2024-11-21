@@ -15,8 +15,10 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// Errors are not handled properly at ANY point in this APP
+// TODO :Errors are not handled properly at ANY point in this APP
 // If something goes wrong, well good luck!
+
+// TODO: Separate struct / var file?
 
 type Account struct {
 	Name  string `json:"name"`
@@ -38,11 +40,6 @@ type WindowInfo struct {
 	Order         int
 }
 
-// Create the App
-func NewApp() *App {
-	return &App{}
-}
-
 type Keybinds struct {
 	KeyName string
 	KeyCode int32
@@ -58,34 +55,31 @@ var (
 	toggleListenerKeybind         string
 	configFile                    *ini.File
 	exeDir                        string
-	stopOrganizerKeybind          int32
-	stopOrganizerKeybindString    string
-	previousCharKeybind           int32
-	nextCharKeybind               int32
 	isAlwaysOnTop                 bool
 	keybindsList                  map[string]Keybinds
+	isOrganizerRunning            bool
 )
 
 const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
+// Create the App
+func NewApp() *App {
+	return &App{}
+}
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	// // Send alt once allows the APP to use SetForegroundWindow with no flashing
-	// // Credit Lexikos from :
-	// // https://github.com/AutoHotkey/AutoHotkey/blob/581114c1c7bb3890ff61cf5f6e1f1201cd8c8b78/source/window.cpp#L89
-	SimulateAltPress()
 
 	// get the current dir
 	exeDir, err := getExecutableDir()
 	if err != nil {
-		runtime.LogPrintf(a.ctx, "Error retrieving executable directory: %v\n", err)
+		runtime.LogErrorf(a.ctx, "Error retrieving executable directory: %v\n", err)
 		return
 	}
-	runtime.LogPrintf(a.ctx, "exeDir %s", exeDir)
 
 	configFilePath = filepath.Join(exeDir, "config.ini")
 	// check if config  ini file exists
@@ -93,7 +87,6 @@ func (a *App) startup(ctx context.Context) {
 	if !exists {
 		a.CreateConfigSection(configFile, exeDir)
 	}
-	runtime.LogPrintf(a.ctx, "config exists %t", exists)
 	if err != nil {
 		runtime.LogError(a.ctx, "Error with the ini file")
 	}
@@ -103,40 +96,36 @@ func (a *App) startup(ctx context.Context) {
 	// Initialize our array
 	a.refreshAndUpdateCharacterList(exists)
 
+	// Initialize map of keybinds and load our saved keybinds
 	keybindsList = make(map[string]Keybinds)
 	a.GetAllKeyBindings()
-
-	// Start main hook for input listener
-	a.StartHook()
 
 	// Start of our Observers
 	runtime.EventsOn(a.ctx, "KeybindsUpdate", func(optionalData ...interface{}) {
 		runtime.LogPrint(a.ctx, "Keybinds Updated...  Restarting Hooks with updated keybinds...")
 
+		// Stop / Start hook to update their keybinds
 		a.StopHook()
 
 		a.StartHook()
 	})
 
-	// a.addMainHook()
+	// // Send alt once allows the APP to use SetForegroundWindow with no flashing
+	// // Credit Lexikos from :
+	// // https://github.com/AutoHotkey/AutoHotkey/blob/581114c1c7bb3890ff61cf5f6e1f1201cd8c8b78/source/window.cpp#L89
+	SimulateAltPress()
+
+	// Start main hook for input listener
+	go a.StartHook()
 }
 
+// Set main window to always be on top
 func (a *App) SetAlwaysOnTop() {
 	isAlwaysOnTop = !isAlwaysOnTop
 	runtime.WindowSetAlwaysOnTop(a.ctx, isAlwaysOnTop)
 }
 
-func (a *App) UpdateMainHookState() {
-	runtime.EventsEmit(a.ctx, "updateMainHookState", isMainHookActive)
-}
-
-func (a *App) GetToggleListenerKeybind() string {
-	if len(toggleListenerKeybind) > 0 {
-		return toggleListenerKeybind
-	}
-	return "Invalid Keybind"
-}
-
+// Fetch Windows to see if any new Dofus windows appeared
 func (a *App) refreshAndUpdateCharacterList(exists bool) {
 	a.DofusWindows = []WindowInfo{}
 
@@ -154,6 +143,7 @@ func (a *App) refreshAndUpdateCharacterList(exists bool) {
 	runtime.LogPrintf(a.ctx, "end of refresh updating Dofus windows")
 }
 
+// gets the .exe dir and returns it as string
 func getExecutableDir() (string, error) {
 	exePath, err := os.Executable()
 	if err != nil {
@@ -162,6 +152,7 @@ func getExecutableDir() (string, error) {
 	return filepath.Dir(exePath), nil
 }
 
+// Iterate through all active Windows and populate a.DofusWindows with them
 func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	// Get the window title
 	title := w32.GetWindowText(hwnd)
@@ -172,8 +163,9 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	if exeName == "Dofus.exe" && processName == "UnityWndClass" && !strings.Contains(title, "Dofus") {
 		characterName, class := parseTitleComponents(title)
 
-		// this will need to change to check if user
-		// changed order of list in frontend
+		// TODO :
+		// need to re order it self before append
+		// if characters.ini has any
 
 		a.DofusWindows = append(a.DofusWindows, WindowInfo{
 			Title:         title,
@@ -187,6 +179,7 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	return true
 }
 
+// Gets the saved order of Characters from characters.ini
 func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
 	section := cfg.Section("Characters")
 
@@ -198,51 +191,13 @@ func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
 	return characterNames, nil
 }
 
-// logic to try and keep order as much as possible even if
-// some characters are not currently logged in
-func (a *App) UpdateOrder(loggedInNames []string, savedOrder []string) []string {
-	runtime.LogPrintf(a.ctx, "INSIDE THIS UPDATE ORDER FUNCTION")
-	runtime.LogPrintf(a.ctx, "LOGGED IN NAMES: %v", loggedInNames)
-	runtime.LogPrintf(a.ctx, "SAVED ORDER: %v", savedOrder)
-
-	// Step 1: Create a map of savedOrder for fast lookup
-	savedMap := make(map[string]bool)
-	for _, char := range savedOrder {
-		savedMap[char] = true
-	}
-
-	// Step 2: Create a new list to hold the updated order
-	var updatedOrder []string
-	var newChars []string // This will hold new characters
-
-	// Step 3: Add new characters first (those not in savedOrder)
-	for _, loggedChar := range loggedInNames {
-		if !savedMap[loggedChar] { // If character wasn't in savedOrder
-			newChars = append(newChars, loggedChar)
-		}
-	}
-
-	// Step 4: Merge new characters at a specific position (e.g., after the first X saved characters)
-	// Example: Insert the new characters after the first 2 characters from savedOrder
-	insertPosition := 2                                                 // This can be customized as per requirement
-	updatedOrder = append(updatedOrder, savedOrder[:insertPosition]...) // Add first part of savedOrder
-
-	// Insert new characters after the first X positions
-	updatedOrder = append(updatedOrder, newChars...)
-
-	// Add the remaining saved characters
-	updatedOrder = append(updatedOrder, savedOrder[insertPosition:]...)
-
-	runtime.LogPrintf(a.ctx, "RETURNING UPDATED ORDER: %v", updatedOrder)
-	return updatedOrder
-}
-
+// Updates the order of the list of Characters
 func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]WindowInfo, error) {
-	runtime.LogPrintf(a.ctx, "Start of Update Order")
+	// TODO : use this after fetching, maybe try to set exeDir as global var again
+
 	// Load the INI file
 	exeDir, _ = getExecutableDir()
 	charactersIniFilePath := filepath.Join(exeDir, "characters.ini")
-	// runtime.LogPrintf(a.ctx, "charactersIniFilePath %s", charactersIniFilePath)
 	// no error handling because i dont have time
 	iniFile, _, _ := loadINIFile(charactersIniFilePath)
 
@@ -253,7 +208,9 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 		return nil, err
 	}
 
+	// array of known char from our saved order
 	var newOrderKnown []WindowInfo
+	// array of unknown char from our saved order
 	var newOrderUnknown []WindowInfo
 
 	loggedInMap := make(map[string]WindowInfo)
@@ -285,9 +242,10 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 		}
 	}
 
-	runtime.LogPrintf(a.ctx, "newOrderKnown.. : %v", newOrderKnown)
 	newOrderKnown = append(newOrderKnown, newOrderUnknown...)
+
 	a.DofusWindows = newOrderKnown
+
 	return newOrderKnown, nil
 }
 
@@ -317,7 +275,7 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 	return nil
 }
 
-// used to populate our config.ini Sections
+// Populate our config.ini Sections and add Default keybinds
 func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
 	section, err := cfg.GetSection("KeyBindings")
 	if err != nil {
@@ -342,7 +300,7 @@ func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
 	}
 }
 
-// Load if not exists, CREATE ini
+// Load an ini file, if does not exists, we create and return it
 func loadINIFile(filePath string) (*ini.File, error, bool) {
 	if _, err := os.Stat(filePath); err == nil {
 		// File exists, load it
@@ -358,6 +316,7 @@ func loadINIFile(filePath string) (*ini.File, error, bool) {
 	}
 }
 
+// Extracts char name and class from Dofus Window Title
 func parseTitleComponents(title string) (string, string) {
 	parts := strings.Split(title, " - ")
 	if len(parts) < 2 {
@@ -366,12 +325,10 @@ func parseTitleComponents(title string) (string, string) {
 	return parts[0], parts[1]
 }
 
-// Random bullshit to get .exe
+// Random bullshit to get .exe name of a window by using it's HWND
 func GetExecutableName(hwnd w32.HWND) (string, error) {
-	// Get the process ID
 	_, pid := w32.GetWindowThreadProcessId(hwnd)
 
-	// Open the process
 	handle, _, _ := syscall.NewLazyDLL("kernel32.dll").
 		NewProc("OpenProcess").
 		Call(PROCESS_QUERY_LIMITED_INFORMATION, 0, uintptr(pid))
@@ -380,7 +337,6 @@ func GetExecutableName(hwnd w32.HWND) (string, error) {
 	}
 	defer syscall.CloseHandle(syscall.Handle(handle))
 
-	// Query the executable name
 	buffer := make([]uint16, syscall.MAX_PATH)
 	size := uint32(len(buffer))
 	ret, _, err := procQueryFullProcessImageName.Call(
@@ -396,7 +352,7 @@ func GetExecutableName(hwnd w32.HWND) (string, error) {
 	return filepath.Base(syscall.UTF16ToString(buffer[:size])), nil
 }
 
-// Used by the frontend to fetch the array
+// Used by the frontend to fetch the array, I think it might be useless now?
 func (a *App) GetDofusWindows() []WindowInfo {
 	_, err, exists := loadINIFile(charactersIniFilePath)
 	runtime.LogPrintf(a.ctx, "characters exists %t", exists)
@@ -413,8 +369,4 @@ func (a *App) GetDofusWindows() []WindowInfo {
 		return a.DofusWindows
 	}
 	return nil
-}
-
-func (a *App) UpdateDofusWindows() {
-	runtime.EventsEmit(a.ctx, "updatedCharacterOrder", a.DofusWindows)
 }

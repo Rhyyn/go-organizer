@@ -6,31 +6,57 @@ import (
 	"time"
 
 	"github.com/go-vgo/robotgo"
-	"github.com/gonutz/w32/v2"
-	"github.com/lxn/win"
 	hook "github.com/robotn/gohook"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-var isMyHookRunning bool
+// gohook fails at registering mouse down, its always mouse up
+// gohook does not have keychar for mouse events
+// gohook does not have KeyPressed event
+// gohook KeyDown does not work with keys that do not output text (f1, page up..)
+// --
+// gohook is based on an open source C library which has all these things but
+// somehow did not make the port from C to GO :)
 
-// need an event to end and restart if key changed
+// mouse button not work because of formatting when saving I think ||
+// need heavy debounce
 func (a *App) mainHook() {
-	runtime.LogPrintf(a.ctx, "isMyHookRunning %t", isMyHookRunning)
-
-	if isMyHookRunning {
-
-		hook.Register(hook.KeyHold, []string{keybindsList["StopOrganizer"].KeyName}, func(e hook.Event) {
-			runtime.LogPrintf(a.ctx, "StopOrganizer key : pressed %v\n ------------\n", e)
-		})
-
-		hook.Register(hook.KeyHold, []string{keybindsList["PreviousChar"].KeyName}, func(e hook.Event) {
-			runtime.LogPrintf(a.ctx, "PreviousChar key : pressed %v\n ------------\n ", e)
-		})
-
-		hook.Register(hook.KeyHold, []string{keybindsList["NextChar"].KeyName}, func(e hook.Event) {
-			runtime.LogPrintf(a.ctx, "NextChar key : pressed %v\n ------------\n ", e)
-		})
+	runtime.LogPrintf(a.ctx, "isMainHookActive %t", isMainHookActive)
+	if isMainHookActive {
+		for action, keybind := range keybindsList {
+			if keybind.KeyCode == 3 || keybind.KeyCode == 4 || keybind.KeyCode == 5 {
+				if action == "StopOrganizer" {
+					hook.Register(hook.MouseDown, []string{""}, func(e hook.Event) {
+						if e.Button == uint16(keybindsList[action].KeyCode) {
+							isOrganizerRunning = !isOrganizerRunning
+							a.UpdateOrganizerRunning()
+							runtime.LogPrintf(a.ctx, "%s mouse : pressed %v\n ------------\n", action, e)
+						}
+					})
+				} else {
+					hook.Register(hook.MouseDown, []string{""}, func(e hook.Event) {
+						if e.Button == uint16(keybindsList[action].KeyCode) && isOrganizerRunning {
+							runtime.LogPrintf(a.ctx, "%s mouse : pressed %v\n ------------\n ", action, e)
+						}
+					})
+				}
+			} else {
+				if action == "StopOrganizer" {
+					hook.Register(hook.KeyHold, []string{keybindsList[action].KeyName}, func(e hook.Event) {
+						runtime.LogPrintf(a.ctx, "%s key : pressed %v\n ------------\n", action, e)
+						isOrganizerRunning = !isOrganizerRunning
+						a.UpdateOrganizerRunning()
+					})
+				} else {
+					hook.Register(hook.KeyHold, []string{keybindsList[action].KeyName}, func(e hook.Event) {
+						if isOrganizerRunning {
+							a.ActivateAction(action)
+							runtime.LogPrintf(a.ctx, "%s key : pressed %v\n ------------\n", action, e)
+						}
+					})
+				}
+			}
+		}
 
 		s := hook.Start()
 		<-hook.Process(s)
@@ -40,137 +66,60 @@ func (a *App) mainHook() {
 	}
 }
 
+func (a *App) ActivateAction(action string) {
+	switch action {
+	case "NextChar":
+		a.ActivateNextChar()
+	case "PreviousChar":
+		a.ActivatePreviousChar()
+	}
+}
+
+// Check if user forground window is a Dofus window ->
+// return true and its index in list
+// || return false and 0 if its not Dofus
+func (a *App) IsWindowDofus() (bool, int) {
+	activeWindowTitle := robotgo.GetTitle()
+	// Need to separarte this logic so we can work with our array
+	windowTitleMap := make(map[string]int)
+	for i, window := range a.DofusWindows {
+		windowTitleMap[window.Title] = i
+	}
+	var currentIndex int
+	currentIndex, found := windowTitleMap[activeWindowTitle]
+	if !found {
+		return false, 0
+	}
+	return true, currentIndex
+}
+
+func (a *App) GetIndexOfCharacter() {
+}
+
 // Start Main Hook
 func (a *App) StartHook() {
 	runtime.LogPrint(a.ctx, "Starting hook..")
-	isMyHookRunning = true
-	a.mainHook()
+	isMainHookActive = true
+	go a.mainHook()
 }
 
 // Stop Main Hook
 func (a *App) StopHook() {
 	runtime.LogPrint(a.ctx, "Stopping hook..")
-	isMyHookRunning = false
+	isMainHookActive = false
 	a.mainHook()
 }
 
-// HOOK
-func (a *App) addMainHook() {
-	chanHook := hook.Start()
-	defer hook.End()
+// Used to Pause Organizer
+func (a *App) PauseHook() {
+	runtime.LogPrint(a.ctx, "pausing hook")
+	isMainHookActive = false
+}
 
-	var isKeyPressed bool
-	var lastToggleTime time.Time
-
-	for ev := range chanHook {
-		time.Sleep(10 * time.Millisecond)
-		if ev.Rawcode == uint16(stopOrganizerKeybind) {
-			runtime.LogPrintf(a.ctx, "ev : %v", ev.Kind)
-			now := time.Now()
-
-			if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold && !isKeyPressed {
-				if !isKeyPressed && now.Sub(lastToggleTime) > 100*time.Millisecond {
-					lastToggleTime = now
-
-					isKeyPressed = true
-					isMainHookActive = !isMainHookActive
-					runtime.LogPrint(a.ctx, "invert bool")
-					runtime.LogPrintf(a.ctx, "isMainHookActive : %t", isMainHookActive)
-					a.UpdateMainHookState()
-				}
-			}
-
-			if ev.Kind == hook.KeyUp {
-				if isKeyPressed {
-					runtime.LogPrint(a.ctx, "up")
-					isKeyPressed = false
-					a.UpdateMainHookState()
-				}
-			}
-		}
-
-		if !isMainHookActive {
-			continue
-		}
-
-		if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyHold || ev.Kind == hook.MouseDown {
-			activeWindowTitle := robotgo.GetTitle()
-			// Need to separarte this logic so we can work with our array
-			windowTitleMap := make(map[string]int)
-			for i, window := range a.DofusWindows {
-				windowTitleMap[window.Title] = i
-			}
-			var currentIndex int
-			currentIndex, found := windowTitleMap[activeWindowTitle]
-			if !found {
-				// runtime.LogPrintf(a.ctx, "Current window not dofus")
-				continue
-			}
-
-			if ev.Rawcode == uint16(nextCharKeybind) {
-				if ev.Kind == hook.KeyHold {
-					if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
-						// Update the last processed time
-						lastKeyHoldTime = time.Now()
-
-						// logs the global event for debug
-						// runtime.LogPrintf(a.ctx, "%v", ev)
-						var nextWindow win.HWND
-						nextIndex := (currentIndex + 1) % len(a.DofusWindows)
-						nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-						a.WinActivate(w32.HWND(nextWindow))
-						// for i, window := range a.DofusWindows {
-						// 	if window.Title == activeWindowTitle {
-						// 		runtime.LogPrintf(a.ctx, "current char : %s", a.DofusWindows[i].CharacterName)
-						// 		currentIndex = i
-						// 		break
-						// 	}
-						// }
-
-						// Not using this because might trigger anti cheat ?
-						// Leave it here cuz might be helpful one day
-						// exeName, _ := GetExecutableName(w32.HWND(activeWindow))
-					}
-				}
-			}
-			if ev.Rawcode == uint16(previousCharKeybind) {
-				if ev.Kind == hook.KeyHold {
-					if time.Since(lastKeyHoldTime) > 300*time.Millisecond { // This is not very good, need a better implementation
-						// Update the last processed time
-						lastKeyHoldTime = time.Now()
-
-						// logs the global event for debug
-						// runtime.LogPrintf(a.ctx, "%v", ev)
-
-						// activeWindow := robotgo.GetHWND()
-						activeWindowTitle := robotgo.GetTitle()
-
-						var currentIndex int
-						var nextWindow win.HWND
-
-						// Need to separate this logic so we can work with our array
-						windowTitleMap := make(map[string]int)
-						for i, window := range a.DofusWindows {
-							windowTitleMap[window.Title] = i
-						}
-
-						currentIndex, found := windowTitleMap[activeWindowTitle]
-
-						if !found {
-							runtime.LogPrintf(a.ctx, "Current window not found")
-							return
-						}
-
-						// Reverse the index logic, decrement and wrap around if less than 0
-						nextIndex := (currentIndex - 1 + len(a.DofusWindows)) % len(a.DofusWindows)
-						nextWindow = win.HWND(a.DofusWindows[nextIndex].Hwnd)
-						a.WinActivate(w32.HWND(nextWindow))
-					}
-				}
-			}
-		}
-
-	}
+// Used to Resume Organizer
+func (a *App) ResumeHook() {
+	runtime.LogPrint(a.ctx, "resuming hook")
+	isMainHookActive = true
 }
 
 // Generic SaveKeybind
@@ -200,11 +149,10 @@ func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (st
 }
 
 // no error handling
+// need rework because space in names like mouse 4 does not properly gets parsed
 func (a *App) GetAllKeyBindings() map[string]Keybinds {
 	// Reload the config file
 	configFile, _, _ := loadINIFile(configFilePath)
-
-	runtime.LogPrint(a.ctx, "INSIDE")
 
 	// Get the KeyBindings section
 	section, err := configFile.GetSection("KeyBindings")
@@ -273,18 +221,15 @@ func (a *App) GetAllKeyBindings() map[string]Keybinds {
 	return keybindsList
 }
 
-func (a *App) PauseHook() {
-	runtime.LogPrint(a.ctx, "pausing hook")
-	isMainHookActive = false
-}
-
-func (a *App) ResumeHook() {
-	runtime.LogPrint(a.ctx, "resuming hook")
-	isMainHookActive = true
-}
-
 // Simulate Alt, down+up, used to make dumbass microsoft windows let us use it's SetForeground api
 func SimulateAltPress() {
 	robotgo.KeyTap("alt")
 	time.Sleep(50 * time.Millisecond)
 }
+
+// easy hook, works only once
+// adde := hook.AddEvent(keybindsList["StopOrganizer"].KeyName)
+// 		runtime.LogPrintf(a.ctx, "adde : %v", adde)
+// 		if adde {
+// 			runtime.LogPrintf(a.ctx, "adde triggered")
+// 		}

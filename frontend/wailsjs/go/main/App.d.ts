@@ -4,15 +4,25 @@ import {ini} from '../models';
 import {main} from '../models';
 import {w32} from '../models';
 
+export function ActivateAction(arg1:string):Promise<void>;
+
+export function ActivateNextChar():Promise<void>;
+
+export function ActivatePreviousChar():Promise<void>;
+
 export function CreateConfigSection(arg1:ini.File,arg2:string):Promise<void>;
 
 export function GetAllKeyBindings():Promise<{[key: string]: main.Keybinds}>;
 
 export function GetDofusWindows():Promise<Array<main.WindowInfo>>;
 
+export function GetIndexOfCharacter():Promise<void>;
+
 export function GetKeycodes():Promise<main.UMap>;
 
 export function GetToggleListenerKeybind():Promise<string>;
+
+export function IsWindowDofus():Promise<boolean|number>;
 
 export function KeybindUpdatedEvent():Promise<void>;
 
@@ -34,8 +44,8 @@ export function UpdateDofusWindows():Promise<void>;
 
 export function UpdateDofusWindowsOrder(arg1:Array<main.WindowInfo>):Promise<Array<main.WindowInfo>>;
 
-export function UpdateMainHookState():Promise<void>;
-
 export function UpdateOrder(arg1:Array<string>,arg2:Array<string>):Promise<Array<string>>;
+
+export function UpdateOrganizerRunning():Promise<void>;
 
 export function WinActivate(arg1:w32.HWND):Promise<w32.HWND>;
