@@ -20,8 +20,6 @@ export function GetIndexOfCharacter():Promise<void>;
 
 export function GetKeycodes():Promise<main.UMap>;
 
-export function GetToggleListenerKeybind():Promise<string>;
-
 export function IsWindowDofus():Promise<boolean|number>;
 
 export function KeybindUpdatedEvent():Promise<void>;
@@ -43,8 +41,6 @@ export function StopHook():Promise<void>;
 export function UpdateDofusWindows():Promise<void>;
 
 export function UpdateDofusWindowsOrder(arg1:Array<main.WindowInfo>):Promise<Array<main.WindowInfo>>;
-
-export function UpdateOrder(arg1:Array<string>,arg2:Array<string>):Promise<Array<string>>;
 
 export function UpdateOrganizerRunning():Promise<void>;
 

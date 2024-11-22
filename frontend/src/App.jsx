@@ -16,7 +16,6 @@ import {
     SaveCharacterList,
     WinActivate,
     SetAlwaysOnTop,
-    StopHook,
 } from "../wailsjs/go/main/App";
 
 function App() {
@@ -96,7 +95,9 @@ function App() {
         console.log("updating order..");
         await UpdateDofusWindowsOrder(dofusWindows)
             .then((result) => {
-                setDofusWindows(result);
+                if (result.length != 0) {
+                    setDofusWindows(result);
+                }
             })
             .catch((error) => {
                 console.error("Failed to update Dofus windows order:", error);
@@ -168,20 +169,17 @@ function App() {
         <div id="App">
             {/* <img src={logo} id="logo" alt="logo" /> */}
             <div className="menu-container">
-                <button className="btn" onClick={getDofusWindows}>
-                    Fetch
-                </button>
                 <button className="btn" onClick={SetAlwaysOnTop}>
                     Pin to top
                 </button>
+                <button className="btn" onClick={getDofusWindows}>
+                    Fetch
+                </button>
                 <button className="btn" onClick={loadOrder}>
-                    Order
+                    Load
                 </button>
                 <button className="btn" onClick={saveOrder}>
                     Save
-                </button>
-                <button className="btn" onClick={StopHook}>
-                    StopHook
                 </button>
             </div>
             <div id="dofusWindowList">
@@ -317,7 +315,7 @@ function App() {
                     Previous Character :
                     <select
                         className="dropdown"
-                        value={previousKey}
+                        value={previousKey.toLowerCase()}
                         onKeyDown={(event) => {
                             event.preventDefault();
                         }}
@@ -344,7 +342,7 @@ function App() {
                         {keycodes.map((key) => (
                             <option
                                 key={key.Code}
-                                value={key.Name}
+                                value={key.Name.toLowerCase()}
                                 data-key={key.Code}
                                 className="dropdown-option"
                             >

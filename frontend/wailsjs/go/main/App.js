@@ -34,10 +34,6 @@ export function GetKeycodes() {
   return window['go']['main']['App']['GetKeycodes']();
 }
 
-export function GetToggleListenerKeybind() {
-  return window['go']['main']['App']['GetToggleListenerKeybind']();
-}
-
 export function IsWindowDofus() {
   return window['go']['main']['App']['IsWindowDofus']();
 }
@@ -80,10 +76,6 @@ export function UpdateDofusWindows() {
 
 export function UpdateDofusWindowsOrder(arg1) {
   return window['go']['main']['App']['UpdateDofusWindowsOrder'](arg1);
-}
-
-export function UpdateOrder(arg1, arg2) {
-  return window['go']['main']['App']['UpdateOrder'](arg1, arg2);
 }
 
 export function UpdateOrganizerRunning() {

@@ -62,7 +62,8 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
-    margin-top: 10px;
+    margin: 0 auto;
+    gap: 4px;
 }
 
 .sub-menu-container {
@@ -83,33 +84,25 @@
 }
 
 .btn {
-    width: 110px;
+    max-width: 100%;
     height: 38px;
     background-color: #686868;
     border: none;
-    border-radius: 4px;
     color: white;
     cursor: pointer;
     font-size: 1.1rem;
-    margin: 0 10px;
     outline: none;
+    flex-basis: 0;
+    flex: 1 1 0px;
+    transition: transform 0.1s ease, background-color 0.2s ease;
 }
 
-.btn2 {
-    width: 200px;
-    height: 38px;
-    background-color: #686868;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    font-size: 1.1rem;
-    margin: 0 10px;
-    outline: none;
+.btn:active {
+    transform: scale(0.95);
 }
 
 .btn:hover {
-    background-color: #434343;
+    background-color: #15beca;
 }
 
 .windows-container {
@@ -201,6 +194,7 @@ input[type="checkbox"] {
     transform: scale(1.5);
     margin-left: 10px;
     outline: none;
+    cursor: pointer;
 }
 
 /* label {

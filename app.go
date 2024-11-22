@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/gonutz/w32/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -119,12 +117,6 @@ func (a *App) startup(ctx context.Context) {
 	go a.StartHook()
 }
 
-// Set main window to always be on top
-func (a *App) SetAlwaysOnTop() {
-	isAlwaysOnTop = !isAlwaysOnTop
-	runtime.WindowSetAlwaysOnTop(a.ctx, isAlwaysOnTop)
-}
-
 // Fetch Windows to see if any new Dofus windows appeared
 func (a *App) refreshAndUpdateCharacterList(exists bool) {
 	a.DofusWindows = []WindowInfo{}
@@ -140,43 +132,10 @@ func (a *App) refreshAndUpdateCharacterList(exists bool) {
 		a.SaveCharacterList(a.DofusWindows)
 	}
 
+	// Should order before updating front
+	a.UpdateDofusWindowsOrder(a.DofusWindows)
+
 	runtime.LogPrintf(a.ctx, "end of refresh updating Dofus windows")
-}
-
-// gets the .exe dir and returns it as string
-func getExecutableDir() (string, error) {
-	exePath, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Dir(exePath), nil
-}
-
-// Iterate through all active Windows and populate a.DofusWindows with them
-func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
-	// Get the window title
-	title := w32.GetWindowText(hwnd)
-	processName, _ := w32.GetClassName(hwnd)
-	exeName, _ := GetExecutableName(hwnd)
-
-	// We check if exe is Dofus, this runs once, should not cause any issues
-	if exeName == "Dofus.exe" && processName == "UnityWndClass" && !strings.Contains(title, "Dofus") {
-		characterName, class := parseTitleComponents(title)
-
-		// TODO :
-		// need to re order it self before append
-		// if characters.ini has any
-
-		a.DofusWindows = append(a.DofusWindows, WindowInfo{
-			Title:         title,
-			Hwnd:          uint64(hwnd),
-			CharacterName: characterName,
-			Class:         class,
-		})
-
-		runtime.LogPrintf(ctx, "Processed window: %s ", title)
-	}
-	return true
 }
 
 // Gets the saved order of Characters from characters.ini
@@ -189,64 +148,6 @@ func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
 	}
 
 	return characterNames, nil
-}
-
-// Updates the order of the list of Characters
-func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]WindowInfo, error) {
-	// TODO : use this after fetching, maybe try to set exeDir as global var again
-
-	// Load the INI file
-	exeDir, _ = getExecutableDir()
-	charactersIniFilePath := filepath.Join(exeDir, "characters.ini")
-	// no error handling because i dont have time
-	iniFile, _, _ := loadINIFile(charactersIniFilePath)
-
-	// Load saved character names from the INI file
-	savedOrder, err := a.loadCharacterList(iniFile)
-	if err != nil {
-		runtime.LogError(a.ctx, "Error loading character list")
-		return nil, err
-	}
-
-	// array of known char from our saved order
-	var newOrderKnown []WindowInfo
-	// array of unknown char from our saved order
-	var newOrderUnknown []WindowInfo
-
-	loggedInMap := make(map[string]WindowInfo)
-	for _, char := range loggedInCharacters {
-		loggedInMap[char.CharacterName] = char
-	}
-
-	processed := make(map[string]bool)
-
-	for _, savedChar := range savedOrder {
-		if _, exists := processed[savedChar]; exists {
-			continue
-		}
-
-		if loggedChar, exists := loggedInMap[savedChar]; exists {
-			newOrderKnown = append(newOrderKnown, loggedChar)
-			processed[savedChar] = true
-		} else {
-			processed[savedChar] = true
-		}
-
-		processed[savedChar] = true
-	}
-
-	for _, loggedChar := range loggedInCharacters {
-		if _, exists := processed[loggedChar.CharacterName]; !exists {
-			newOrderUnknown = append(newOrderUnknown, loggedChar)
-			processed[loggedChar.CharacterName] = true
-		}
-	}
-
-	newOrderKnown = append(newOrderKnown, newOrderUnknown...)
-
-	a.DofusWindows = newOrderKnown
-
-	return newOrderKnown, nil
 }
 
 // this deletes our section and re create it
@@ -314,59 +215,4 @@ func loadINIFile(filePath string) (*ini.File, error, bool) {
 		cfg := ini.Empty()
 		return cfg, nil, false
 	}
-}
-
-// Extracts char name and class from Dofus Window Title
-func parseTitleComponents(title string) (string, string) {
-	parts := strings.Split(title, " - ")
-	if len(parts) < 2 {
-		return "Unknown", "Unknown"
-	}
-	return parts[0], parts[1]
-}
-
-// Random bullshit to get .exe name of a window by using it's HWND
-func GetExecutableName(hwnd w32.HWND) (string, error) {
-	_, pid := w32.GetWindowThreadProcessId(hwnd)
-
-	handle, _, _ := syscall.NewLazyDLL("kernel32.dll").
-		NewProc("OpenProcess").
-		Call(PROCESS_QUERY_LIMITED_INFORMATION, 0, uintptr(pid))
-	if handle == 0 {
-		return "", fmt.Errorf("unable to open process for PID %d", pid)
-	}
-	defer syscall.CloseHandle(syscall.Handle(handle))
-
-	buffer := make([]uint16, syscall.MAX_PATH)
-	size := uint32(len(buffer))
-	ret, _, err := procQueryFullProcessImageName.Call(
-		handle,
-		0,
-		uintptr(unsafe.Pointer(&buffer[0])),
-		uintptr(unsafe.Pointer(&size)),
-	)
-	if ret == 0 {
-		return "", fmt.Errorf("error retrieving executable name: %v", err)
-	}
-
-	return filepath.Base(syscall.UTF16ToString(buffer[:size])), nil
-}
-
-// Used by the frontend to fetch the array, I think it might be useless now?
-func (a *App) GetDofusWindows() []WindowInfo {
-	_, err, exists := loadINIFile(charactersIniFilePath)
-	runtime.LogPrintf(a.ctx, "characters exists %t", exists)
-	if err != nil {
-		runtime.LogError(a.ctx, "Error with the ini file")
-	}
-
-	// check if inifile exists
-
-	runtime.LogPrintf(a.ctx, "Calling refreshAndUpdateCharacterList with exists : %t", exists)
-	a.refreshAndUpdateCharacterList(exists)
-
-	if len(a.DofusWindows) > 0 {
-		return a.DofusWindows
-	}
-	return nil
 }
