@@ -31,6 +31,7 @@ func (a *App) mainHook() {
 				} else {
 					hook.Register(hook.MouseDown, []string{""}, func(e hook.Event) {
 						if e.Button == uint16(keybindsList[action].KeyCode) && isOrganizerRunning {
+							a.ActivateAction(action)
 							runtime.LogPrintf(a.ctx, "%s mouse : pressed %v\n ------------\n ", action, e)
 						}
 					})
