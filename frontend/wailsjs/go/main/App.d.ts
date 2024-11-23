@@ -44,4 +44,6 @@ export function UpdateDofusWindowsOrder(arg1:Array<main.WindowInfo>):Promise<Arr
 
 export function UpdateOrganizerRunning():Promise<void>;
 
+export function UpdateTemporaryDofusWindows(arg1:Array<main.WindowInfo>):Promise<void>;
+
 export function WinActivate(arg1:w32.HWND):Promise<w32.HWND>;

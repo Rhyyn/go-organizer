@@ -16,6 +16,7 @@ import {
     SaveCharacterList,
     WinActivate,
     SetAlwaysOnTop,
+    UpdateTemporaryDofusWindows,
 } from "../wailsjs/go/main/App";
 
 function App() {
@@ -107,6 +108,7 @@ function App() {
         console.log(dofusWindows);
     }
 
+    // TODO: move should change the order
     const moveUp = (index) => {
         if (index > 0) {
             const newList = [...dofusWindows];
@@ -114,7 +116,7 @@ function App() {
             newList[index] = newList[index - 1];
             newList[index - 1] = temp;
             setDofusWindows(newList);
-            console.log(newList);
+            UpdateTemporaryDofusWindows(newList);
         }
     };
 
@@ -125,7 +127,7 @@ function App() {
             newList[index] = newList[index + 1];
             newList[index + 1] = temp;
             setDofusWindows(newList);
-            console.log(newList);
+            UpdateTemporaryDofusWindows(newList);
         }
     };
 

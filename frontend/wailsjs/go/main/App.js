@@ -82,6 +82,10 @@ export function UpdateOrganizerRunning() {
   return window['go']['main']['App']['UpdateOrganizerRunning']();
 }
 
+export function UpdateTemporaryDofusWindows(arg1) {
+  return window['go']['main']['App']['UpdateTemporaryDofusWindows'](arg1);
+}
+
 export function WinActivate(arg1) {
   return window['go']['main']['App']['WinActivate'](arg1);
 }

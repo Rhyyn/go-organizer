@@ -30,9 +30,18 @@ var ATTEMPT_SET_FORE bool
 func (a *App) ActivateNextChar() {
 	isDofus, index := a.IsWindowDofus()
 	if isDofus {
+		runtime.LogPrintf(a.ctx, "activating next char")
 		nextIndex := (index + 1) % len(a.DofusWindows)
 		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
 		a.WinActivate(w32.HWND(nextWindow))
+	}
+}
+
+func (a *App) UpdateTemporaryDofusWindows(tempChars []WindowInfo) {
+	if tempChars != nil || len(tempChars) != 0 {
+		a.DofusWindows = tempChars
+	} else {
+		runtime.LogErrorf(a.ctx, "error while updating temporary chars to a.DofusWindows %v", tempChars)
 	}
 }
 
