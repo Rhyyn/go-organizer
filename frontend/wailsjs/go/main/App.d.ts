@@ -12,13 +12,17 @@ export function ActivatePreviousChar():Promise<void>;
 
 export function CreateConfigSection(arg1:ini.File,arg2:string):Promise<void>;
 
-export function GetAllKeyBindings():Promise<{[key: string]: main.Keybinds}>;
+export function GetAllKeyBindings():Promise<{[key: number]: main.Keybinds}>;
 
 export function GetDofusWindows():Promise<Array<main.WindowInfo>>;
 
-export function GetIndexOfCharacter():Promise<void>;
-
 export function GetKeycodes():Promise<main.UMap>;
+
+export function GetStringFromKey(arg1:number):Promise<string|boolean>;
+
+export function GoHook():Promise<void>;
+
+export function InstallHook():Promise<void>;
 
 export function IsWindowDofus():Promise<boolean|number>;
 
@@ -34,9 +38,7 @@ export function SaveKeybind(arg1:number,arg2:string,arg3:string):Promise<string>
 
 export function SetAlwaysOnTop():Promise<void>;
 
-export function StartHook():Promise<void>;
-
-export function StopHook():Promise<void>;
+export function UninstallHook():Promise<void>;
 
 export function UpdateDofusWindows():Promise<void>;
 

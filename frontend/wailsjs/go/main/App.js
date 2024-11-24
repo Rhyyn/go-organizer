@@ -26,12 +26,20 @@ export function GetDofusWindows() {
   return window['go']['main']['App']['GetDofusWindows']();
 }
 
-export function GetIndexOfCharacter() {
-  return window['go']['main']['App']['GetIndexOfCharacter']();
-}
-
 export function GetKeycodes() {
   return window['go']['main']['App']['GetKeycodes']();
+}
+
+export function GetStringFromKey(arg1) {
+  return window['go']['main']['App']['GetStringFromKey'](arg1);
+}
+
+export function GoHook() {
+  return window['go']['main']['App']['GoHook']();
+}
+
+export function InstallHook() {
+  return window['go']['main']['App']['InstallHook']();
 }
 
 export function IsWindowDofus() {
@@ -62,12 +70,8 @@ export function SetAlwaysOnTop() {
   return window['go']['main']['App']['SetAlwaysOnTop']();
 }
 
-export function StartHook() {
-  return window['go']['main']['App']['StartHook']();
-}
-
-export function StopHook() {
-  return window['go']['main']['App']['StopHook']();
+export function UninstallHook() {
+  return window['go']['main']['App']['UninstallHook']();
 }
 
 export function UpdateDofusWindows() {
