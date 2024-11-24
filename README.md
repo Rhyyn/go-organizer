@@ -1,5 +1,7 @@
 # go-organizer
 
+![Screenshot 2024-11-24 141639](https://github.com/user-attachments/assets/0a6eb79a-9ae0-40e4-9bb6-7c0af7995229)
+
 ## FR (English below)
 
 ### Un organiseur pour Dofus Unity en Golang, **CECI N'EST PAS UN LOGICIEL DE TRICHE**, aucune automatisation de clic / déplacements / échanges etc..
