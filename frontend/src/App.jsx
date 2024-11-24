@@ -29,13 +29,6 @@ function App() {
     const [nextKey, setNextKey] = useState("");
     const [stopOrganizerKey, setStopOrganizerKey] = useState("");
 
-    // EventsOn("KeybindsUpdate", (updatedKeybinds) => {
-    //     console.log("event received", updatedKeybinds);
-    //     setStopOrganizerKey(updatedKeybinds["StopOrganizer"].KeyName);
-    //     setNextKey(updatedKeybinds["NextChar"].KeyName);
-    //     setPreviousKey(updatedKeybinds["PreviousChar"].KeyName);
-    // });
-
     // First run of the app to get keycodes/keybinds
     useEffect(() => {
         if (isFirst) {
@@ -134,9 +127,21 @@ function App() {
     // Fetch keybinds
     const FetchKeybinds = () => {
         GetAllKeyBindings().then((result) => {
-            setStopOrganizerKey(result["StopOrganizer"].KeyName.toUpperCase());
-            setNextKey(result["NextChar"].KeyName.toUpperCase());
-            setPreviousKey(result["PreviousChar"].KeyName.toUpperCase());
+            Object.values(result).map((keybind) => {
+                switch (keybind.Action) {
+                    case "StopOrganizer":
+                        setStopOrganizerKey(keybind.KeyName);
+                        break;
+                    case "NextChar":
+                        setNextKey(keybind.KeyName);
+                        break;
+                    case "PreviousChar":
+                        setPreviousKey(keybind.KeyName);
+                        break;
+                    default:
+                        break;
+                }
+            });
         });
     };
 
@@ -169,7 +174,6 @@ function App() {
 
     return (
         <div id="App">
-            {/* <img src={logo} id="logo" alt="logo" /> */}
             <div className="menu-container">
                 <button className="btn" onClick={SetAlwaysOnTop}>
                     Pin to top

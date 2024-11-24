@@ -29,6 +29,7 @@ func main() {
 			app,
 		},
 		DisableResize: false,
+		OnBeforeClose: app.beforeClose,
 	})
 	if err != nil {
 		println("Error:", err.Error())

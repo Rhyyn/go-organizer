@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"syscall"
-	"time"
 
 	"github.com/gonutz/w32/v2"
+	"github.com/moutend/go-hook/pkg/types"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gopkg.in/ini.v1"
 )
@@ -39,23 +41,27 @@ type WindowInfo struct {
 }
 
 type Keybinds struct {
+	Action  string
 	KeyName string
-	KeyCode int32
 }
 
 var (
 	charactersIniFilePath         string
 	configFilePath                string
-	lastKeyHoldTime               time.Time
 	modKernel32                   = syscall.NewLazyDLL("kernel32.dll")
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
-	isMainHookActive              bool
-	toggleListenerKeybind         string
 	configFile                    *ini.File
 	exeDir                        string
 	isAlwaysOnTop                 bool
-	keybindsList                  map[string]Keybinds
+	keybindMap                    map[int32]Keybinds
 	isOrganizerRunning            bool
+	isKeyPressed                  map[int32]bool
+	isMousePressed                map[int32]bool
+	mapMutex                      sync.Mutex
+	keyboardChan                  chan types.KeyboardEvent
+	mouseChan                     chan types.MouseEvent
+	WM_XBUTTONDOWN                types.Message = 0x020B // 523 -> XButton Down
+	WM_XBUTTONUP                  types.Message = 0x020C // 524 -> XButton UP
 )
 
 const (
@@ -95,7 +101,9 @@ func (a *App) startup(ctx context.Context) {
 	a.refreshAndUpdateCharacterList(exists)
 
 	// Initialize map of keybinds and load our saved keybinds
-	keybindsList = make(map[string]Keybinds)
+	keybindMap = make(map[int32]Keybinds)
+	isKeyPressed = make(map[int32]bool)
+	isMousePressed = make(map[int32]bool)
 	a.GetAllKeyBindings()
 
 	// Start of our Observers
@@ -103,9 +111,12 @@ func (a *App) startup(ctx context.Context) {
 		runtime.LogPrint(a.ctx, "Keybinds Updated...  Restarting Hooks with updated keybinds...")
 
 		// Stop / Start hook to update their keybinds
-		a.StopHook()
+		a.handleInterrupt()
 
-		a.StartHook()
+		err := a.InstallHook()
+		if err != nil {
+			runtime.LogErrorf(a.ctx, "Error installing Hook.. %v", err)
+		}
 	})
 
 	// // Send alt once allows the APP to use SetForegroundWindow with no flashing
@@ -114,7 +125,13 @@ func (a *App) startup(ctx context.Context) {
 	SimulateAltPress()
 
 	// Start main hook for input listener
-	go a.StartHook()
+	if err := a.InstallHook(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := a.GoHook(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Fetch Windows to see if any new Dofus windows appeared

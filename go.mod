@@ -8,7 +8,7 @@ require (
 	github.com/go-vgo/robotgo v0.110.5
 	github.com/gonutz/w32/v2 v2.11.1
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
-	github.com/robotn/gohook v0.41.0
+	github.com/moutend/go-hook v0.1.0
 	github.com/wailsapp/wails/v2 v2.9.2
 	golang.org/x/sys v0.27.0
 	gopkg.in/ini.v1 v1.67.0

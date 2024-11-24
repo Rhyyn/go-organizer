@@ -55,3 +55,8 @@ func parseTitleComponents(title string) (string, string) {
 	}
 	return parts[0], parts[1]
 }
+
+// later used
+// func getVKStringFromVKCode(key types.VKCode) string {
+// 	return key.String()
+// }
