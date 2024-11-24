@@ -16,6 +16,7 @@ import sramIcon from "./assets/CLASSES_icons/sram.png";
 import steamerIcon from "./assets/CLASSES_icons/steamer.png";
 import xelorIcon from "./assets/CLASSES_icons/xelor.png";
 import sadidaIcon from "./assets/CLASSES_icons/sadida.png";
+import eniripsaIcon from "./assets/CLASSES_icons/eniripsa.png";
 import defaultIcon from "./assets/CLASSES_icons/dofus.png";
 
 const classIcons = {
@@ -37,6 +38,8 @@ const classIcons = {
     steamer: steamerIcon,
     xelor: xelorIcon,
     sadida: sadidaIcon,
+    sadida: sadidaIcon,
+    eniripsa: eniripsaIcon,
     default: defaultIcon,
 };
 

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/go-vgo/robotgo"
 	"github.com/gonutz/w32/v2"
@@ -20,6 +21,7 @@ import (
 
 var (
 	procAttachThreadInput = user32.NewProc("AttachThreadInput")
+	procBringWindowToTop  = user32.NewProc("BringWindowToTop")
 	isHungAppWindow       = user32.NewProc("IsHungAppWindow")
 	user32                = syscall.NewLazyDLL("user32.dll")
 )
@@ -30,7 +32,7 @@ var ATTEMPT_SET_FORE bool
 func (a *App) ActivateNextChar() {
 	isDofus, index := a.IsWindowDofus()
 	if isDofus {
-		runtime.LogPrintf(a.ctx, "activating next char")
+		// runtime.LogPrintf(a.ctx, "activating next char")
 		nextIndex := (index + 1) % len(a.DofusWindows)
 		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
 		a.WinActivate(w32.HWND(nextWindow))
@@ -74,6 +76,8 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	exeName, _ := GetExecutableName(hwnd)
 
 	// We check if exe is Dofus, this runs once, should not cause any issues
+	// TODO: Make it do we can cycle through Dofus with no title
+	// but not save it
 	if exeName == "Dofus.exe" && processName == "UnityWndClass" && !strings.Contains(title, "Dofus") {
 		characterName, class := parseTitleComponents(title)
 
@@ -234,8 +238,11 @@ func (a *App) attemptSetForeground(targetWindow w32.HWND) bool {
 	// We do not use the returning bool because from AHK contributors it is unreliable
 	_ = w32.SetForegroundWindow(targetWindow)
 
+	time.Sleep(30 * time.Millisecond)
 	// Instead we do a simple check against currently active Foreground Window
 	newForeWindow := w32.GetForegroundWindow()
+	// fmt.Printf("active Window : %v with HWND : %v\n", w32.GetWindowText(newForeWindow), newForeWindow)
+	// fmt.Printf("targetWindow : %v with HWND : %v\n", w32.GetWindowText(targetWindow), targetWindow)
 	return newForeWindow == targetWindow
 }
 
@@ -248,19 +255,20 @@ func BoolToBOOL(value bool) uintptr {
 }
 
 // !! IMPORTANT, detaching threads we added earlier
-func detachThreadInputs(isAttachedMyToFore bool, isAttachedForeToTarget bool, mainThreadID, foreThread, targetThread uint32) {
-	if isAttachedMyToFore {
-		_, _, _ = procAttachThreadInput.Call(
-			uintptr(mainThreadID),
-			uintptr(foreThread),
-			uintptr(0),
+func detachThreadInputs(currentThread, activeThread, windowThread w32.HANDLE) {
+	if currentThread != 0 && currentThread != activeThread {
+		procAttachThreadInput.Call(
+			uintptr(currentThread),
+			uintptr(activeThread),
+			BoolToBOOL(false),
 		)
 	}
-	if isAttachedForeToTarget {
-		_, _, _ = procAttachThreadInput.Call(
-			uintptr(foreThread),
-			uintptr(targetThread),
-			uintptr(0),
+
+	if windowThread != 0 && currentThread != 0 && windowThread != currentThread {
+		procAttachThreadInput.Call(
+			uintptr(windowThread),
+			uintptr(currentThread),
+			BoolToBOOL(false),
 		)
 	}
 }
@@ -272,9 +280,7 @@ func detachThreadInputs(isAttachedMyToFore bool, isAttachedForeToTarget bool, ma
 // }
 
 func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow w32.HWND) w32.HWND {
-	runtime.LogPrint(a.ctx, "Inside setForegroundWindowEx")
-
-	targetThread := a.getWindowThreadProcessId(targetWindow)
+	// runtime.LogPrint(a.ctx, "Inside setForegroundWindowEx")
 
 	// Check if our window is already foreground, return if it is
 	if targetWindow == origForegroundWindow {
@@ -289,82 +295,91 @@ func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 
 	newForeWindow := a.getForegroundWindow()
 
-	runtime.LogPrint(a.ctx, "First Activation")
+	// runtime.LogPrint(a.ctx, "First Activation")
 	// First attempt at SetForeground
+	ATTEMPT_SET_FORE = false
 	ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
 	if ATTEMPT_SET_FORE {
+		// currentWindow := a.getForegroundWindow()
+		// procBringWindowToTop.Call(uintptr(currentWindow))
 		return targetWindow
 	}
 
+	// runtime.LogPrint(a.ctx, "First Activation failed, attaching threads...")
 	// We failed so next we attach our mainThread to the targetWindow before trying again
-	isAttachedToMyFore := false
-	isAttachedForeToTarget := false
-	mainThreadID := windows.GetCurrentThreadId()
-	foreThread := a.getWindowThreadProcessId(newForeWindow)
+	currentThread := w32.HANDLE(windows.GetCurrentThreadId())
+	activeThread := a.getWindowThreadProcessId(newForeWindow)
+	windowThread := a.getWindowThreadProcessId(targetWindow)
 
 	// Check that our original window still exists
 	if int32(origForegroundWindow) != 0 {
-		if foreThread != 0 && int32(mainThreadID) != int32(foreThread) && !a.isWindowHung(uintptr(origForegroundWindow)) {
-			ret, _, _ := procAttachThreadInput.Call(
-				uintptr(mainThreadID),
-				uintptr(foreThread),
+		if currentThread != 0 && currentThread != activeThread && !a.isWindowHung(uintptr(origForegroundWindow)) {
+			procAttachThreadInput.Call(
+				uintptr(currentThread),
+				uintptr(activeThread),
 				BoolToBOOL(true),
 			)
-			isAttachedToMyFore = ret != 0
 		}
 
-		if foreThread != 0 && targetThread != 0 && foreThread != targetThread {
-			ret, _, _ := procAttachThreadInput.Call(
-				uintptr(foreThread),
-				uintptr(targetThread),
+		if windowThread != 0 && currentThread != 0 && windowThread != currentThread {
+			procAttachThreadInput.Call(
+				uintptr(windowThread),
+				uintptr(currentThread),
 				BoolToBOOL(true),
 			)
-			isAttachedForeToTarget = ret != 0
 		}
 	}
 
-	var TriedKeyUp bool
-
-	// Try up to 5 times
-	for i := 0; i < 5; i++ {
-		if !TriedKeyUp {
-			TriedKeyUp = true
-			// Send alt up to allow SetForeground
-			robotgo.KeyToggle("alt", "up")
-		}
-		runtime.LogPrint(a.ctx, "For loop activation")
-		// We try to SetForeground again up to 5 times
-		ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
-		// If success we return
-		if ATTEMPT_SET_FORE {
-			return newForeWindow
-		}
-	}
-
-	// If it did not succeed we send double alt and we try again
-	if !ATTEMPT_SET_FORE {
-		runtime.LogPrint(a.ctx, "Double tap activation")
+	// runtime.LogPrint(a.ctx, "Activation with threads..\n")
+	robotgo.KeyTap("alt")
+	ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
+	// If success we return
+	if ATTEMPT_SET_FORE {
+		// runtime.LogPrint(a.ctx, "Deatching threads...\n")
+		// !!! IMPORTANT !!! ---- Detach threads
+		detachThreadInputs(currentThread, activeThread, windowThread)
+		return newForeWindow
+	} else {
+		// If it did not succeed we send double alt and we try again
+		// runtime.LogPrint(a.ctx, "Activation with threads failed.. sending double alt..")
+		// runtime.LogPrint(a.ctx, "Double tap activation")
 		robotgo.KeyTap("alt")
 		robotgo.KeyTap("alt")
 
 		// Last try
 		ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
-
+		// !!! IMPORTANT !!! ---- Detach threads
+		detachThreadInputs(currentThread, activeThread, windowThread)
 	}
-
-	// !!! IMPORTANT !!! ---- Detach threads
-	detachThreadInputs(isAttachedToMyFore, isAttachedForeToTarget, mainThreadID, uint32(foreThread), uint32(targetThread))
 
 	// If success bring to top
 	// Should not be needed
-	// if ATTEMPT_SET_FORE {
-	// 	currentWindow := a.getForegroundWindow()
-	// 	procBringWindowToTop.Call(uintptr(currentWindow))
-	// }
-
-	if !ATTEMPT_SET_FORE {
+	if ATTEMPT_SET_FORE {
+		// runtime.LogPrint(a.ctx, "Activation with threads success.. bringing window to top")
+		// runtime.LogPrintf(a.ctx, "procBringWindowToTop")
+		currentWindow := a.getForegroundWindow()
+		procBringWindowToTop.Call(uintptr(currentWindow))
+	} else {
 		runtime.LogPrintf(a.ctx, "Failed to activate a window")
 	}
 
 	return newForeWindow
 }
+
+// var TriedKeyUp bool
+
+// Try up to 5 times
+// for i := 0; i < 5; i++ {
+// 	if !TriedKeyUp {
+// 		TriedKeyUp = true
+// 		// Send alt up to allow SetForeground
+// 		robotgo.KeyToggle("alt", "up")
+// 	}
+// 	runtime.LogPrint(a.ctx, "For loop activation")
+// 	// We try to SetForeground again up to 5 times
+// 	ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
+// 	// If success we return
+// 	if ATTEMPT_SET_FORE {
+// 		return newForeWindow
+// 	}
+// }

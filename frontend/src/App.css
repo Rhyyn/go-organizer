@@ -112,14 +112,14 @@
     justify-content: center;
     width: 95%;
     margin: 0 auto;
+    margin-top: 5px;
 }
 
 .window-item {
     display: flex;
     width: 100%;
-    margin: 5px;
+    margin: 2px;
     font-size: 1.3rem;
-    padding: 5px;
     background-color: #4b4b4b;
     border-radius: 4px;
     height: 50px;

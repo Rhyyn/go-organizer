@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gonutz/w32/v2"
 	"github.com/moutend/go-hook/pkg/keyboard"
 	"github.com/moutend/go-hook/pkg/mouse"
 	"github.com/moutend/go-hook/pkg/types"
@@ -94,6 +95,13 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 	return false
 }
 
+func (a *App) handleDebounce(eventKey int32) {
+	if time.Since(lastInputTime) > (300 * time.Millisecond) {
+		lastInputTime = time.Now()
+		a.handleKeyDown(eventKey)
+	}
+}
+
 // lowOrder := uint16(kEvent.MouseData & 0xFFFF)
 // TODO: make sure this properly close?
 func (a *App) GoHook() error {
@@ -106,7 +114,15 @@ func (a *App) GoHook() error {
 		case kEvent := <-keyboardChan:
 			switch kEvent.Message {
 			case types.WM_KEYDOWN:
-				a.handleKeyDown(int32(kEvent.VKCode))
+				a.handleDebounce(int32(kEvent.VKCode))
+				if int32(kEvent.VKCode) == 118 {
+					foreHWND := a.getForegroundWindow()
+					activeHWND := w32.GetActiveWindow()
+					titleForeground := w32.GetWindowText(foreHWND)
+					titleActive := w32.GetWindowText(activeHWND)
+					fmt.Printf("current foreground : %s", titleForeground)
+					fmt.Printf("current active : %s", titleActive)
+				}
 			case types.WM_KEYUP:
 				a.handleKeyUp(int32(kEvent.VKCode))
 			}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/gonutz/w32/v2"
 	"github.com/moutend/go-hook/pkg/types"
@@ -62,6 +63,7 @@ var (
 	mouseChan                     chan types.MouseEvent
 	WM_XBUTTONDOWN                types.Message = 0x020B // 523 -> XButton Down
 	WM_XBUTTONUP                  types.Message = 0x020C // 524 -> XButton UP
+	lastInputTime                 time.Time
 )
 
 const (
@@ -104,6 +106,7 @@ func (a *App) startup(ctx context.Context) {
 	keybindMap = make(map[int32]Keybinds)
 	isKeyPressed = make(map[int32]bool)
 	isMousePressed = make(map[int32]bool)
+	lastInputTime = time.Now()
 	a.GetAllKeyBindings()
 
 	// Start of our Observers
