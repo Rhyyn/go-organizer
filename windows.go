@@ -178,12 +178,6 @@ func (a *App) GetDofusWindows() []WindowInfo {
 	return nil
 }
 
-// Set main window to always be on top
-func (a *App) SetAlwaysOnTop() {
-	isAlwaysOnTop = !isAlwaysOnTop
-	runtime.WindowSetAlwaysOnTop(a.ctx, isAlwaysOnTop)
-}
-
 // Check if user forground window is a Dofus window ->
 // return true and its index in list
 // || return false and 0 if its not Dofus

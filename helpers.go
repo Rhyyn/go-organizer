@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/gonutz/w32/v2"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // gets the .exe dir and returns it as string
@@ -54,6 +55,12 @@ func parseTitleComponents(title string) (string, string) {
 		return "Unknown", "Unknown"
 	}
 	return parts[0], parts[1]
+}
+
+// Set main window to always be on top
+func (a *App) SetAlwaysOnTop() {
+	isAlwaysOnTop = !isAlwaysOnTop
+	runtime.WindowSetAlwaysOnTop(a.ctx, isAlwaysOnTop)
 }
 
 // later used
