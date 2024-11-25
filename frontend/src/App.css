@@ -1,19 +1,58 @@
-#app {
+/* #app {
     height: 100vh;
     text-align: center;
+} */
+
+* {
+    font-family: "Nunito";
 }
 
-#logo {
-    display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
+/* start of header */
+
+.title-bar-container {
+    cursor: grab;
+    user-select: none;
+    background-color: #262626;
+    display: flex;
+    align-items: center;
+    height: 30px;
 }
+
+.title-bar-container:active {
+    cursor: grabbing;
+}
+
+/* .app-info-container {
+    display: flex;
+    align-items: center;
+    flex: 1;
+} */
+
+.app-logo {
+    height: 26px;
+    margin-left: 5px;
+}
+
+.app-title-container {
+    display: flex;
+    justify-content: center;
+    flex: 1;
+}
+
+.cross-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+.cross-icon:hover {
+    background-color: #ca1515;
+    cursor: pointer;
+}
+
+/* ------ end of header */
 
 .result {
     height: 20px;
@@ -58,6 +97,8 @@
     background-color: rgba(255, 255, 255, 1);
 }
 
+/* start of menu */
+
 .menu-container {
     display: flex;
     justify-content: space-between;
@@ -85,7 +126,7 @@
 
 .btn {
     max-width: 100%;
-    height: 38px;
+    height: 34px;
     background-color: #686868;
     border: none;
     color: white;
@@ -105,6 +146,33 @@
     background-color: #15beca;
 }
 
+/* end of menu */
+
+.button-to-overlay-mode {
+    width: 100%;
+    height: 28px;
+    background-color: #4f4f4f;
+    border: none;
+    outline: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.button-to-overlay-mode:hover {
+    background-color: #15beca;
+    font-size: 1.1rem;
+}
+
+.button-to-overlay-mode:active {
+    transform: scale(0.95);
+}
+
+/* start of windows */
+
 .windows-container {
     display: flex;
     flex-direction: column;
@@ -119,10 +187,10 @@
     display: flex;
     width: 100%;
     margin: 2px;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     background-color: #4b4b4b;
     border-radius: 4px;
-    height: 50px;
+    height: 45px;
     align-items: center;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
@@ -132,7 +200,7 @@
 }
 
 .class-icon {
-    height: 45px;
+    height: 43px;
     padding-top: 3px;
 }
 
@@ -160,7 +228,7 @@
     line-height: 30px;
     border-radius: 3px;
     border: none;
-    margin: 0 10px;
+    margin: 0 5px;
     padding: 0 8px;
     cursor: pointer;
     display: flex;
@@ -247,9 +315,9 @@ input[type="checkbox"] {
     width: 350px;
     display: flex;
     justify-content: space-between;
-    margin: 2px;
-    padding: 8px;
-    background-color: #4b4b4b;
+    /* margin: 2px; */
+    padding: 4px;
+    /* background-color: #4b4b4b; */
     border-radius: 4px;
     font-size: 1.2rem;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
@@ -258,6 +326,9 @@ input[type="checkbox"] {
 .dropdown {
     outline: none;
     cursor: pointer;
+    background: #5e5e5e;
+    border: none;
+    color: white;
 }
 
 .dropdown:hover {
@@ -267,4 +338,35 @@ input[type="checkbox"] {
 
 .dropdown-option:hover {
     cursor: pointer;
+}
+
+/* START OF OVERLAY STYLING MODE */
+
+.overlay-mode {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.expand-icon {
+    height: 30px;
+    width: 30px;
+    cursor: pointer;
+}
+
+.expand-icon:hover {
+    transform: scale(1.1);
+    background-color: #4b4b4b;
+    border-radius: 4px;
+}
+
+.overlay-character-item {
+    height: 36px;
+    width: 36px;
+}
+
+.overlay-class-icon {
+    height: 36px;
 }
