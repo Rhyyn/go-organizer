@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gonutz/w32/v2"
+	"github.com/lxn/win"
 	"github.com/moutend/go-hook/pkg/types"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gopkg.in/ini.v1"
@@ -51,6 +52,7 @@ var (
 	configFilePath                string
 	modKernel32                   = syscall.NewLazyDLL("kernel32.dll")
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
+	procGetWindowTextW            = user32.NewProc("GetWindowTextW")
 	configFile                    *ini.File
 	exeDir                        string
 	isAlwaysOnTop                 bool
@@ -64,6 +66,7 @@ var (
 	WM_XBUTTONDOWN                types.Message = 0x020B // 523 -> XButton Down
 	WM_XBUTTONUP                  types.Message = 0x020C // 524 -> XButton UP
 	lastInputTime                 time.Time
+	msg                           win.MSG
 )
 
 const (
@@ -127,6 +130,7 @@ func (a *App) startup(ctx context.Context) {
 	// // https://github.com/AutoHotkey/AutoHotkey/blob/581114c1c7bb3890ff61cf5f6e1f1201cd8c8b78/source/window.cpp#L89
 	SimulateAltPress()
 
+	go a.testHook()
 	// Start main hook for input listener
 	if err := a.InstallHook(); err != nil {
 		log.Fatal(err)

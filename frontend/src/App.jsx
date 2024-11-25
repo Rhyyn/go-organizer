@@ -189,8 +189,7 @@ function App() {
 
     const handleWindowMode = () => {
         if (isWindowFull) {
-            WindowSetMinSize(1, 1);
-            WindowSetSize(130, 120);
+            WindowSetSize(200, 46);
             setIsWindowFull(false);
             WindowGetPosition().then((result) => {
                 setWindowFullPosition(result);
@@ -210,6 +209,12 @@ function App() {
     };
 
     const handleOverlayListDirection = () => {};
+
+    const [activeChar, setActiveChar] = useState(null);
+    EventsOn("CharSelectedEvent", (activeChar) => {
+        console.log(activeChar);
+        setActiveChar(activeChar);
+    });
 
     return (
         <div id="App">
@@ -466,13 +471,6 @@ function App() {
                         onClick={() => handleWindowMode()}
                         style={{ widows: "2" }}
                     ></img>
-                    <img
-                        src={expandRight}
-                        alt="expand list down"
-                        title="Expand right"
-                        className="expand-icon"
-                        style={{ widows: "2" }}
-                    ></img>
                     {dofusWindows.length === 0 ? (
                         <span>
                             No Dofus windows found. Use Fetch in full mode
@@ -481,7 +479,12 @@ function App() {
                         <div className="overlay-characters-container">
                             {dofusWindows.map((window, index) => (
                                 <div
-                                    className="overlay-character-item"
+                                    // fix this, it's not working properly
+                                    className={`overlay-character-item ${
+                                        activeChar === window.hwnd
+                                            ? "char-active"
+                                            : "char-inactive"
+                                    }`}
                                     key={window.CharacterName}
                                     style={{ widows: "2" }}
                                 >
@@ -496,6 +499,7 @@ function App() {
                                             window.Class || "Default"
                                         } Icon`}
                                         style={{ widows: "2" }}
+                                        onClick={() => WinActivate(window.hwnd)}
                                     ></img>
                                 </div>
                             ))}

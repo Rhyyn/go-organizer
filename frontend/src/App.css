@@ -346,7 +346,7 @@ input[type="checkbox"] {
     height: 100vh;
     width: 100%;
     display: flex;
-    flex-direction: column;
+
     align-items: center;
 }
 
@@ -362,11 +362,30 @@ input[type="checkbox"] {
     border-radius: 4px;
 }
 
+.overlay-characters-container {
+    display: flex;
+    border: none;
+    overflow: hidden;
+}
+
 .overlay-character-item {
-    height: 36px;
-    width: 36px;
+    height: 38px;
+    width: 43px;
+    padding-bottom: 4px;
+    margin: 0 1px;
+}
+
+.char-active {
+    background-color: #84ccd1;
+    border-radius: 4px;
+}
+
+.overlay-character-item:hover {
+    background-color: #84ccd1;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .overlay-class-icon {
-    height: 36px;
+    height: 38px;
 }

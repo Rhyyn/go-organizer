@@ -81,6 +81,7 @@ func (a *App) handleInterrupt() {
 
 	go func() {
 		fmt.Println("Received interrupt signal. Stopping the keyboard hook...")
+		fmt.Printf("Current winEvHook: %v\n", winEvHook)
 		a.UninstallHook()
 		done <- true
 	}()

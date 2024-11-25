@@ -156,6 +156,8 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 
 	a.DofusWindows = newOrderKnown
 
+	a.WinActivate(w32.HWND(a.DofusWindows[0].Hwnd))
+
 	return newOrderKnown, nil
 }
 
