@@ -142,6 +142,10 @@
     transform: scale(0.95);
 }
 
+.on-top {
+    background-color: #12a1ab;
+}
+
 .btn:hover {
     background-color: #15beca;
 }

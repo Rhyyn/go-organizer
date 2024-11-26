@@ -32,11 +32,11 @@ function App() {
     const [previousKey, setPreviousKey] = useState("");
     const [nextKey, setNextKey] = useState("");
     const [stopOrganizerKey, setStopOrganizerKey] = useState("");
+    const [isOnTop, setIsOnTop] = useState(false);
 
     // First run of the app to get keycodes/keybinds
     useEffect(() => {
         if (isFirstRun.current) {
-            console.log("first run");
             getKeyCodes();
             FetchKeybinds();
             isFirstRun.current = false; // Mark as done after the first run
@@ -205,13 +205,21 @@ function App() {
         setActiveChar(activeChar);
     });
 
+    const handleAlwaysOntop = () => {
+        SetAlwaysOnTop(!isOnTop);
+        setIsOnTop(!isOnTop);
+    };
+
     return (
         <div id="App">
             {isWindowFull ? (
                 <div className="full-mode">
                     <TitleBar></TitleBar>
                     <div className="menu-container">
-                        <button className="btn" onClick={SetAlwaysOnTop}>
+                        <button
+                            className={`btn ${isOnTop ? "on-top" : ""}`}
+                            onClick={handleAlwaysOntop}
+                        >
                             Pin to top
                         </button>
                         <button className="btn" onClick={getDofusWindows}>
