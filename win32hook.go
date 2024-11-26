@@ -14,15 +14,14 @@ import (
 )
 
 var (
-	modkernel32 = windows.NewLazyDLL("kernel32.dll")
-
+	modkernel32          = windows.NewLazyDLL("kernel32.dll")
 	procSetWinEventHook  = user32.NewProc("SetWinEventHook")
 	procUnhookWinEvent   = user32.NewProc("UnhookWinEvent")
 	procGetMessage       = user32.NewProc("GetMessageW")
 	procTranslateMessage = user32.NewProc("TranslateMessage")
 	procDispatchMessage  = user32.NewProc("DispatchMessageW")
-
-	procGetModuleHandle = modkernel32.NewProc("GetModuleHandleW")
+	procGetModuleHandle  = modkernel32.NewProc("GetModuleHandleW")
+	winEvHook            HWINEVENTHOOK
 )
 
 type WINEVENTPROC func(hWinEventHook HWINEVENTHOOK, event uint32, hwnd HWND, idObject int32, idChild int32, idEventThread uint32, dwmsEventTime uint32) uintptr
@@ -61,9 +60,6 @@ type MSG struct {
 }
 
 const (
-	//~ EVENT_SYSTEM_FOREGROUND DWORD = 0x0003
-	//~ WINEVENT_OUTOFCONTEXT  DWORD = 0x0000
-	//~ WINEVENT_INCONTEXT   = 0x0004
 	EVENT_SYSTEM_FOREGROUND = 3
 	WINEVENT_OUTOFCONTEXT   = 0
 	WINEVENT_INCONTEXT      = 4
@@ -71,12 +67,13 @@ const (
 	WINEVENT_SKIPOWNTHREAD  = 1
 )
 
-var winEvHook HWINEVENTHOOK
-
-func (a *App) testHook() {
-	log.Println("starting")
-	hinst := GetModuleHandle("")
-	fmt.Println(hinst)
+// Starts a windows hook for foreground window changed event
+// Emits Event to CharSelectedEvent
+func (a *App) foregroundWindowsHook() {
+	// log.Println("starting")
+	// might block something?
+	// hinst := GetModuleHandle("")
+	// fmt.Println(hinst)
 
 	eventChannel := make(chan w32.HWND)
 
@@ -92,14 +89,14 @@ func (a *App) testHook() {
 		if processName == "UnityWndClass" {
 			// Send the hwnd to the channel
 			eventChannel <- w32HWND
-			log.Printf("windowActivated : %s\n", w32.GetWindowText(w32HWND))
+			// log.Printf("windowActivated : %s\n", w32.GetWindowText(w32HWND))
 		}
 		return 0
 	}
 
 	winEvHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, 0, ActiveWinEventHook, 0, 0, WINEVENT_OUTOFCONTEXT|WINEVENT_SKIPOWNPROCESS)
-	log.Println("Windows Event Hook: ")
-	log.Println("Windows Event Hook: ", winEvHook)
+	// log.Println("Windows Event Hook: ")
+	// log.Println("Windows Event Hook: ", winEvHook)
 
 	for {
 
@@ -112,9 +109,9 @@ func (a *App) testHook() {
 }
 
 func SetWinEventHook(eventMin DWORD, eventMax DWORD, hmodWinEventProc HMODULE, pfnWinEventProc WINEVENTPROC, idProcess DWORD, idThread DWORD, dwFlags DWORD) HWINEVENTHOOK {
-	log.Println("procSetWinEventHook S")
+	// log.Println("procSetWinEventHook S")
 	pfnWinEventProcCallback := syscall.NewCallback(pfnWinEventProc)
-	ret, ret2, err := procSetWinEventHook.Call(
+	ret, _, err := procSetWinEventHook.Call(
 		uintptr(eventMin),
 		uintptr(eventMax),
 		uintptr(hmodWinEventProc),
@@ -123,26 +120,22 @@ func SetWinEventHook(eventMin DWORD, eventMax DWORD, hmodWinEventProc HMODULE, p
 		uintptr(idThread),
 		uintptr(dwFlags),
 	)
-
-	log.Printf("%#v", err)
-	log.Printf("%#v", ret)
-	log.Printf("%#v", ret2)
-	log.Println("procSetWinEventHook E")
+	if err != nil {
+		log.Printf("%#v", err)
+	}
+	// log.Printf("%#v", ret2)
+	// log.Println("procSetWinEventHook E")
 	return HWINEVENTHOOK(ret)
 }
 
 func UnhookWinEvent(hWinEventHook HWINEVENTHOOK) bool {
-	fmt.Println("UnhookWinEvent called")
+	// fmt.Println("UnhookWinEvent called")
 	ret, _, err := procUnhookWinEvent.Call(
 		uintptr(hWinEventHook),
 	)
 	if err != nil {
 		fmt.Printf("Error in UnhookWinEvent: %v\n", err)
 	}
-
-	// Check GetLastError for more detailed failure information
-	lastErr := windows.GetLastError()
-	fmt.Printf("Last error after Unhook: %v\n", lastErr)
 
 	return ret != 0
 }
