@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/go-vgo/robotgo"
 	"github.com/gonutz/w32/v2"
@@ -20,23 +23,90 @@ import (
 // All credit goes to their contributors
 
 var (
-	procAttachThreadInput = user32.NewProc("AttachThreadInput")
-	procBringWindowToTop  = user32.NewProc("BringWindowToTop")
-	isHungAppWindow       = user32.NewProc("IsHungAppWindow")
-	user32                = syscall.NewLazyDLL("user32.dll")
+	procAttachThreadInput    = user32.NewProc("AttachThreadInput")
+	procBringWindowToTop     = user32.NewProc("BringWindowToTop")
+	isHungAppWindow          = user32.NewProc("IsHungAppWindow")
+	user32                   = syscall.NewLazyDLL("user32.dll")
+	enumDisplayMonitors      = user32.NewProc("EnumDisplayMonitors")
+	monitorFromWindow        = user32.NewProc("MonitorFromWindow")
+	ATTEMPT_SET_FORE         bool
+	basePosition             WindowPosition
+	MONITOR_DEFAULTTOPRIMARY DWORD
+	monitor                  HMONITOR
 )
 
-var ATTEMPT_SET_FORE bool
+type WindowPosition struct {
+	X int
+	Y int
+}
+type RECT struct {
+	Left, Top, Right, Bottom int32
+}
+type (
+	HMONITOR HANDLE
+	HDC      HANDLE
+)
 
-// NEED DEBOUNCING
-func (a *App) ActivateNextChar() {
-	isDofus, index := a.IsWindowDofus()
-	if isDofus {
-		// runtime.LogPrintf(a.ctx, "activating next char")
-		nextIndex := (index + 1) % len(a.DofusWindows)
-		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
-		a.WinActivate(w32.HWND(nextWindow))
+func (a *App) monitorEnumProc(hMonitor HMONITOR, hdcMonitor HDC, lprcMonitor *RECT, dwData LPARAM) uintptr {
+	fmt.Printf("Monitor Handle: %v\n", hMonitor)
+	fmt.Printf("Monitor Rect: Left=%d, Top=%d, Right=%d, Bottom=%d\n",
+		lprcMonitor.Left, lprcMonitor.Top, lprcMonitor.Right, lprcMonitor.Bottom)
+
+	return 1
+}
+
+func EnumDisplayMonitors(hdc HDC, clip *RECT, lpfnEnum, data uintptr) error {
+	ret, _, _ := enumDisplayMonitors.Call(
+		uintptr(hdc),
+		uintptr(unsafe.Pointer(clip)),
+		lpfnEnum,
+		data,
+	)
+	if ret == 0 {
+		return fmt.Errorf("EnumDisplayMonitors returned FALSE")
 	}
+	return nil
+}
+
+func (a *App) getAllMonitors() {
+	enumProc := syscall.NewCallback(a.monitorEnumProc)
+	err := EnumDisplayMonitors(0, nil, enumProc, 0)
+	if err != nil {
+		log.Fatalf("Failed to enumerate monitors: %v", err)
+	}
+}
+
+func MonitorFromWindow(hwnd HWND, dwFlags uint32) HMONITOR {
+	ret, _, _ := monitorFromWindow.Call(monitorFromWindow.Addr(), 2,
+		uintptr(hwnd),
+		uintptr(dwFlags),
+		0)
+
+	return HMONITOR(ret)
+}
+
+// This needs to trigger at startup
+// Need to check DPI
+func (a *App) handleWindowPosition() {
+	a.getAllMonitors()
+
+	// We save the base position on startup
+	basePosition.X, basePosition.Y = runtime.WindowGetPosition(a.ctx)
+	// save current monitor that window is on, if no monitor, sets to primary
+	hwnd := HWND(w32.GetCurrentProcess()) // could do native, but cba
+	monitor = MonitorFromWindow(hwnd, 3)
+
+	// func to compare to config saved
+	// if != enumMonitors
+	// if monitor handle not present in monitors
+	// sets to primary and save
+	// MonitorHandle = x
+	// FullWindowPosition = x, y
+	// OverlayWindowPosition = x, y
+	// else check for saved pos
+	// if pos not of bound
+	// sets pos check bounds
+	// if out set to center or bound?
 }
 
 func (a *App) UpdateTemporaryDofusWindows(tempChars []WindowInfo) {
@@ -47,7 +117,16 @@ func (a *App) UpdateTemporaryDofusWindows(tempChars []WindowInfo) {
 	}
 }
 
-// NEED DEBOUNCING
+func (a *App) ActivateNextChar() {
+	isDofus, index := a.IsWindowDofus()
+	if isDofus {
+		// runtime.LogPrintf(a.ctx, "activating next char")
+		nextIndex := (index + 1) % len(a.DofusWindows)
+		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
+		a.WinActivate(w32.HWND(nextWindow))
+	}
+}
+
 func (a *App) ActivatePreviousChar() {
 	isDofus, index := a.IsWindowDofus()
 	if isDofus {
@@ -66,6 +145,27 @@ func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
 	}
 
 	return a.setForegroundWindowEx(targetWindow, origForegroundWindow)
+}
+
+// Fetch Windows to see if any new Dofus windows appeared
+func (a *App) refreshAndUpdateCharacterList(exists bool) {
+	a.DofusWindows = []WindowInfo{}
+
+	// Loop through windows and populate our array
+	w32.EnumWindows(func(hwnd w32.HWND) bool {
+		return EnumWindowsCallback(a.ctx, hwnd, a)
+	})
+
+	runtime.LogPrintf(a.ctx, "Looped through Windows and inside refreshAndUpdateCharacterList with exists : %t", exists)
+	// This stinks
+	if !exists {
+		a.SaveCharacterList(a.DofusWindows)
+	}
+
+	// Should order before updating front
+	a.UpdateDofusWindowsOrder(a.DofusWindows)
+
+	runtime.LogPrintf(a.ctx, "end of refresh updating Dofus windows")
 }
 
 // Iterate through all active Windows and populate a.DofusWindows with them

@@ -13,6 +13,9 @@ import {
     WindowSetSize,
     WindowGetPosition,
     WindowSetMinSize,
+    WindowSetPosition,
+    ScreenGetAll,
+    WindowCenter,
 } from "../wailsjs/runtime/runtime";
 import "./App.css";
 import {
@@ -187,24 +190,13 @@ function App() {
     const [windowFullPosition, setWindowFullPosition] = useState({});
     const [windowOverlayPosition, setWindowOverlayPosition] = useState({});
 
-    const handleWindowMode = () => {
+    const handleWindowMode = async () => {
         if (isWindowFull) {
             WindowSetSize(200, 46);
             setIsWindowFull(false);
-            WindowGetPosition().then((result) => {
-                setWindowFullPosition(result);
-            });
         } else {
-            console.log("clicked");
-            WindowSetMinSize(1, 1);
             WindowSetSize(392, 800);
             setIsWindowFull(true);
-            WindowGetPosition().then((result) => {
-                // if (windowOverlayPosition != null) {
-                //     console.log(windowOverlayPosition.x);
-                // }
-                setWindowOverlayPosition(result);
-            });
         }
     };
 

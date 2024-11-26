@@ -12,6 +12,9 @@ import (
 
 // Generic SaveKeybind
 func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (string, error) {
+	configFileMutex.Lock()
+	defer configFileMutex.Unlock()
+
 	// Open Config
 	configFile, _, _ = loadINIFile(configFilePath)
 	section, _ := configFile.GetSection("KeyBindings")
@@ -41,10 +44,9 @@ func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (st
 }
 
 // no error handling
-// need rework because space in names like mouse 4 does not properly gets parsed
 func (a *App) GetAllKeyBindings() map[int32]Keybinds {
-	mapMutex.Lock()
-	defer mapMutex.Unlock()
+	configFileMutex.Lock()
+	defer configFileMutex.Unlock()
 
 	// Reload the config file
 	configFile, _, _ := loadINIFile(configFilePath)

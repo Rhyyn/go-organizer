@@ -10,7 +10,101 @@ import (
 
 	"github.com/gonutz/w32/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"gopkg.in/ini.v1"
 )
+
+// Gets the saved order of Characters from characters.ini
+func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
+	section := cfg.Section("Characters")
+
+	var characterNames []string
+	for _, key := range section.Keys() {
+		characterNames = append(characterNames, key.Name())
+	}
+
+	return characterNames, nil
+}
+
+// this deletes our section and re create it
+// idk if its a good idea but it works :)
+func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
+	characterFileMutex.Lock()
+	defer characterFileMutex.Unlock()
+
+	exeDir, _ := getExecutableDir()
+
+	charactersIniFilePath := filepath.Join(exeDir, "characters.ini")
+	iniFile, _, _ := loadINIFile(charactersIniFilePath)
+
+	iniFile.DeleteSection("Characters")
+
+	section := iniFile.Section("Characters")
+	runtime.LogPrintf(a.ctx, "Saving character list: %v", dofusWindows)
+	for _, window := range dofusWindows {
+		section.Key(window.CharacterName).SetValue("")
+	}
+
+	err := iniFile.SaveTo(charactersIniFilePath)
+	if err != nil {
+		runtime.LogPrintf(a.ctx, "saving INI file: %v", err)
+	}
+
+	runtime.LogPrint(a.ctx, "Dofus windows order updated successfully!\n")
+	a.DofusWindows = dofusWindows
+	return nil
+}
+
+// Populate our config.ini Sections and add Default keybinds
+func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
+	section, err := cfg.GetSection("KeyBindings")
+	if err != nil {
+		section = cfg.Section("KeyBindings")
+	}
+	section.Key("StopOrganizer").SetValue("115,F4")
+	section.Key("PreviousChar").SetValue("113,F2")
+	section.Key("NextChar").SetValue("114,F3")
+
+	windowSection, err := cfg.GetSection("Window")
+	if err != nil {
+		windowSection = cfg.Section("Window")
+	}
+	windowSection.Key("MonitorHandle")
+	windowSection.Key("FullPosition")
+	windowSection.Key("OverlayPosition")
+
+	// if section.Key("StopOrganizer").String() == "" {
+	// }
+	// if section.Key("PreviousChar").String() == "" {
+	// }
+	// if section.Key("NextChar").String() == "" {
+	// }
+
+	err = cfg.SaveTo(filepath.Join(exeDir, "config.ini"))
+	if err != nil {
+		runtime.LogErrorf(a.ctx, "Error saving config file: %v", err)
+	} else {
+		runtime.LogPrintf(a.ctx, "Config file created/updated successfully")
+	}
+}
+
+// Load an ini file, if does not exists, we create and return it
+func loadINIFile(filePath string) (*ini.File, error, bool) {
+	configFileMutex.Lock()
+	defer configFileMutex.Unlock()
+
+	if _, err := os.Stat(filePath); err == nil {
+		// File exists, load it
+		cfg, err := ini.Load(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load INI file: %w", err), false
+		}
+		return cfg, nil, true
+	} else {
+		// File doesn't exist, create a new one
+		cfg := ini.Empty()
+		return cfg, nil, false
+	}
+}
 
 // gets the .exe dir and returns it as string
 func getExecutableDir() (string, error) {
