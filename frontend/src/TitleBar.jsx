@@ -17,6 +17,7 @@ export const TitleBar = () => {
                     Go-organizer
                 </div>
                 <img
+                    style={{ widows: "2" }}
                     onClick={() => Quit()}
                     className="cross-icon"
                     src={crossIcon}

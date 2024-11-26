@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -120,7 +119,6 @@ func (a *App) UpdateTemporaryDofusWindows(tempChars []WindowInfo) {
 func (a *App) ActivateNextChar() {
 	isDofus, index := a.IsWindowDofus()
 	if isDofus {
-		// runtime.LogPrintf(a.ctx, "activating next char")
 		nextIndex := (index + 1) % len(a.DofusWindows)
 		nextWindow := win.HWND(a.DofusWindows[nextIndex].Hwnd)
 		a.WinActivate(w32.HWND(nextWindow))
@@ -143,6 +141,7 @@ func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
 		runtime.LogPrintf(a.ctx, "Target window is not valid. %v", targetWindow)
 		return origForegroundWindow
 	}
+	fmt.Printf("targetWindow : %v\n origForegroundWindow: %v\n", targetWindow, origForegroundWindow)
 
 	return a.setForegroundWindowEx(targetWindow, origForegroundWindow)
 }
@@ -157,6 +156,7 @@ func (a *App) refreshAndUpdateCharacterList(exists bool) {
 	})
 
 	runtime.LogPrintf(a.ctx, "Looped through Windows and inside refreshAndUpdateCharacterList with exists : %t", exists)
+
 	// This stinks
 	if !exists {
 		a.SaveCharacterList(a.DofusWindows)
@@ -178,7 +178,7 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	// We check if exe is Dofus, this runs once, should not cause any issues
 	// TODO: Make it do we can cycle through Dofus with no title
 	// but not save it
-	if exeName == "Dofus.exe" && processName == "UnityWndClass" && !strings.Contains(title, "Dofus") {
+	if exeName == "Dofus.exe" && processName == "UnityWndClass" {
 		characterName, class := parseTitleComponents(title)
 
 		// TODO :
@@ -199,17 +199,12 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 
 // Updates the order of the list of Characters
 func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]WindowInfo, error) {
-	// TODO : use this after fetching, maybe try to set exeDir as global var again
-
-	if loggedInCharacters == nil || len(loggedInCharacters) == 0 {
+	if len(loggedInCharacters) == 0 {
 		return a.DofusWindows, nil
 	}
 
-	// Load the INI file
-	exeDir, _ = getExecutableDir()
-	charactersIniFilePath := filepath.Join(exeDir, "characters.ini")
 	// no error handling because i dont have time
-	iniFile, _, _ := loadINIFile(charactersIniFilePath)
+	iniFile, _, _ := loadINIFile(charactersFilePath)
 
 	// Load saved character names from the INI file
 	savedOrder, err := a.loadCharacterList(iniFile)
@@ -224,54 +219,70 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 	var newOrderUnknown []WindowInfo
 
 	loggedInMap := make(map[string]WindowInfo)
+
 	for _, char := range loggedInCharacters {
 		loggedInMap[char.CharacterName] = char
 	}
 
 	processed := make(map[string]bool)
-
-	for _, savedChar := range savedOrder {
-		if _, exists := processed[savedChar]; exists {
-			continue
-		}
-
-		if loggedChar, exists := loggedInMap[savedChar]; exists {
-			newOrderKnown = append(newOrderKnown, loggedChar)
-			processed[savedChar] = true
-		} else {
-			processed[savedChar] = true
-		}
-
-		processed[savedChar] = true
-	}
+	processedHWND := make(map[uint64]bool)
 
 	for _, loggedChar := range loggedInCharacters {
-		if _, exists := processed[loggedChar.CharacterName]; !exists {
-			newOrderUnknown = append(newOrderUnknown, loggedChar)
-			processed[loggedChar.CharacterName] = true
+		if !strings.Contains(loggedChar.CharacterName, "Dofus") {
+			for _, savedChar := range savedOrder {
+				if _, exists := processed[savedChar]; exists {
+					continue
+				}
+
+				if loggedChar, exists := loggedInMap[savedChar]; exists {
+					newOrderKnown = append(newOrderKnown, loggedChar)
+					processed[savedChar] = true
+					processedHWND[loggedChar.Hwnd] = true
+				} else {
+					processedHWND[loggedChar.Hwnd] = true
+					processed[savedChar] = true
+				}
+				processedHWND[loggedChar.Hwnd] = true
+				processed[savedChar] = true
+			}
+
+			for _, loggedChar := range loggedInCharacters {
+				if _, exists := processed[loggedChar.CharacterName]; !exists {
+					newOrderUnknown = append(newOrderUnknown, loggedChar)
+					processed[loggedChar.CharacterName] = true
+					processedHWND[loggedChar.Hwnd] = true
+				}
+			}
+		} else {
+			fmt.Printf("Adding to newOrderUnknown: %v\n", loggedChar.CharacterName)
+			if _, exists := processedHWND[loggedChar.Hwnd]; !exists {
+				processed[loggedChar.CharacterName] = true
+				processedHWND[loggedChar.Hwnd] = true
+				newOrderUnknown = append(newOrderUnknown, loggedChar)
+			}
 		}
 	}
 
+	// fmt.Printf("newOrderUnknown : %v\n", newOrderUnknown)
+	// fmt.Printf("newOrderKnown : %v\n", newOrderKnown)
 	newOrderKnown = append(newOrderKnown, newOrderUnknown...)
+	// fmt.Printf("newOrderKnown after combining : %v\n", newOrderKnown)
 
 	a.DofusWindows = newOrderKnown
 
-	a.WinActivate(w32.HWND(a.DofusWindows[0].Hwnd))
+	// if we set [0] but user activate manually other char it fucks everything
+	// a.WinActivate(w32.HWND(a.DofusWindows[0].Hwnd))
 
 	return newOrderKnown, nil
 }
 
 // Used by the frontend to fetch the array, I think it might be useless now?
 func (a *App) GetDofusWindows() []WindowInfo {
-	_, err, exists := loadINIFile(charactersIniFilePath)
-	runtime.LogPrintf(a.ctx, "characters exists %t", exists)
+	_, err, exists := loadINIFile(charactersFilePath)
 	if err != nil {
 		runtime.LogError(a.ctx, "Error with the ini file")
 	}
 
-	// check if inifile exists
-
-	runtime.LogPrintf(a.ctx, "Calling refreshAndUpdateCharacterList with exists : %t", exists)
 	a.refreshAndUpdateCharacterList(exists)
 
 	if len(a.DofusWindows) > 0 {
@@ -284,18 +295,18 @@ func (a *App) GetDofusWindows() []WindowInfo {
 // return true and its index in list
 // || return false and 0 if its not Dofus
 func (a *App) IsWindowDofus() (bool, int) {
-	activeWindowTitle := robotgo.GetTitle()
-	// TODO: use isWindowValid to check before
-	windowTitleMap := make(map[string]int)
-	for i, window := range a.DofusWindows {
-		windowTitleMap[window.Title] = i
-	}
-	var currentIndex int
-	currentIndex, found := windowTitleMap[activeWindowTitle]
-	if !found {
+	activeWindowHandle := w32.GetForegroundWindow()
+	if activeWindowHandle == 0 {
 		return false, 0
 	}
-	return true, currentIndex
+
+	for i, window := range a.DofusWindows {
+		if window.Hwnd == uint64(activeWindowHandle) {
+			return true, i
+		}
+	}
+
+	return false, 0
 }
 
 // checks if our window can be activated

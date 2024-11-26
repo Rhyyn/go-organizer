@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TitleBar } from "./TitleBar";
 import classIcons from "./ClassIcons";
 import upArrow from "./assets/GUI_icons/arrow-up.png";
@@ -7,16 +7,7 @@ import reduceWhite from "./assets/GUI_icons/reduceWhite.png";
 import expandWhite from "./assets/GUI_icons/expandWhite.png";
 import expandRight from "./assets/GUI_icons/expandRight.png";
 import expandDown from "./assets/GUI_icons/expandDown.png";
-import {
-    EventsOff,
-    EventsOn,
-    WindowSetSize,
-    WindowGetPosition,
-    WindowSetMinSize,
-    WindowSetPosition,
-    ScreenGetAll,
-    WindowCenter,
-} from "../wailsjs/runtime/runtime";
+import { EventsOff, EventsOn, WindowSetSize } from "../wailsjs/runtime/runtime";
 import "./App.css";
 import {
     GetDofusWindows,
@@ -33,7 +24,7 @@ import {
 } from "../wailsjs/go/main/App";
 
 function App() {
-    const [isFirst, setIsFirst] = useState(true);
+    const isFirstRun = useRef(true);
     const [isActive, setIsActive] = useState(false);
     const [dofusWindows, setDofusWindows] = useState([]);
     const [keycodes, setKeycodes] = useState([]);
@@ -44,12 +35,13 @@ function App() {
 
     // First run of the app to get keycodes/keybinds
     useEffect(() => {
-        if (isFirst) {
+        if (isFirstRun.current) {
+            console.log("first run");
             getKeyCodes();
             FetchKeybinds();
+            isFirstRun.current = false; // Mark as done after the first run
         }
-        setIsFirst(false);
-    }, [isFirst]);
+    }, []);
 
     // TODO: check this
     useEffect(() => {
@@ -100,6 +92,7 @@ function App() {
     // ask back to load order of saved characters
     async function loadOrder() {
         console.log("updating order..");
+        console.log(dofusWindows);
         await UpdateDofusWindowsOrder(dofusWindows)
             .then((result) => {
                 if (result.length != 0) {
@@ -110,8 +103,7 @@ function App() {
                 console.error("Failed to update Dofus windows order:", error);
             });
         // GetDofusWindows().then(updateWindows);
-        console.log("updatedorder.. to :");
-        console.log(dofusWindows);
+        // console.log("updatedorder.. to :");
     }
 
     // TODO: move should change the order
@@ -137,9 +129,14 @@ function App() {
         }
     };
 
+    // EmitsOn("KeybindsUpdate", () => {
+    //     FetchKeybinds();
+    // })
+
     // Fetch keybinds
     const FetchKeybinds = () => {
         GetAllKeyBindings().then((result) => {
+            console.log(result);
             Object.values(result).map((keybind) => {
                 switch (keybind.Action) {
                     case "StopOrganizer":

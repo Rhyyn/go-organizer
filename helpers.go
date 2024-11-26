@@ -28,23 +28,19 @@ func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
 // this deletes our section and re create it
 // idk if its a good idea but it works :)
 func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
-	characterFileMutex.Lock()
-	defer characterFileMutex.Unlock()
-
-	exeDir, _ := getExecutableDir()
-
-	charactersIniFilePath := filepath.Join(exeDir, "characters.ini")
-	iniFile, _, _ := loadINIFile(charactersIniFilePath)
+	iniFile, _, _ := loadINIFile(charactersFilePath)
 
 	iniFile.DeleteSection("Characters")
 
 	section := iniFile.Section("Characters")
-	runtime.LogPrintf(a.ctx, "Saving character list: %v", dofusWindows)
+	runtime.LogPrintf(a.ctx, "Saving character list: %v\n", dofusWindows)
 	for _, window := range dofusWindows {
-		section.Key(window.CharacterName).SetValue("")
+		if !strings.Contains(window.Title, "Dofus") {
+			section.Key(window.CharacterName).SetValue("")
+		}
 	}
 
-	err := iniFile.SaveTo(charactersIniFilePath)
+	err := iniFile.SaveTo(charactersFilePath)
 	if err != nil {
 		runtime.LogPrintf(a.ctx, "saving INI file: %v", err)
 	}
@@ -96,7 +92,7 @@ func loadINIFile(filePath string) (*ini.File, error, bool) {
 		// File exists, load it
 		cfg, err := ini.Load(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load INI file: %w", err), false
+			return nil, err, false
 		}
 		return cfg, nil, true
 	} else {
@@ -107,12 +103,18 @@ func loadINIFile(filePath string) (*ini.File, error, bool) {
 }
 
 // gets the .exe dir and returns it as string
-func getExecutableDir() (string, error) {
+func getExecutableDir() {
 	exePath, err := os.Executable()
+
+	exeDirTemp := filepath.Dir(exePath)
+
 	if err != nil {
-		return "", err
+		fmt.Printf("error while getting exe dir %v\n", err)
+	} else {
+		exeDir = exeDirTemp
+		configFilePath = filepath.Join(exeDirTemp, "config.ini")
+		charactersFilePath = filepath.Join(exeDirTemp, "characters.ini")
 	}
-	return filepath.Dir(exePath), nil
 }
 
 // Random bullshit to get .exe name of a window by using it's HWND

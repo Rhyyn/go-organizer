@@ -12,17 +12,26 @@ import (
 
 // Generic SaveKeybind
 func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (string, error) {
-	configFileMutex.Lock()
-	defer configFileMutex.Unlock()
-
 	// Open Config
 	configFile, _, _ = loadINIFile(configFilePath)
 	section, _ := configFile.GetSection("KeyBindings")
+
+	if _, exists := keybindMap[keycode]; exists {
+		return "failed", nil
+	}
 
 	// Create a string combination of the two
 	value := fmt.Sprintf("%d,%s", keycode, strings.ToUpper(keyname))
 
 	// runtime.LogPrintf(a.ctx, "value saved : %v", value)
+	for existingKeycode, keybind := range keybindMap {
+		if keybind.Action == keybindName {
+			// If the Action matches, delete the old keybind
+			delete(keybindMap, existingKeycode)
+			fmt.Printf("Removed old keybind with action '%s' at keycode %d\n", keybindName, existingKeycode)
+			break // Exit the loop once the old keybind is found and removed
+		}
+	}
 
 	section.Key(keybindName).SetValue(value)
 
@@ -45,11 +54,11 @@ func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (st
 
 // no error handling
 func (a *App) GetAllKeyBindings() map[int32]Keybinds {
-	configFileMutex.Lock()
-	defer configFileMutex.Unlock()
-
-	// Reload the config file
-	configFile, _, _ := loadINIFile(configFilePath)
+	configFile, err, _ := loadINIFile(configFilePath)
+	if err != nil && configFile != nil {
+		fmt.Printf("Error loading config file: %v\n", err)
+		return nil
+	}
 
 	// Get the KeyBindings section
 	section, err := configFile.GetSection("KeyBindings")
@@ -100,7 +109,6 @@ func (a *App) GetAllKeyBindings() map[int32]Keybinds {
 
 	// Get PreviousChar key
 	prevCode, prevName, err := parseKey("PreviousChar")
-	runtime.LogPrintf(a.ctx, "prevCode  : %d, prevName : %s", prevCode, prevName)
 	if err != nil {
 		return nil
 	}
@@ -119,7 +127,7 @@ func (a *App) GetAllKeyBindings() map[int32]Keybinds {
 		KeyName: nextName,
 	}
 
-	runtime.LogPrintf(a.ctx, "Update keybinds to %v", keybindMap)
+	fmt.Printf("Update keybinds to %v\n", keybindMap)
 	return keybindMap
 }
 

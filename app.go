@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -44,7 +43,7 @@ type Keybinds struct {
 }
 
 var (
-	charactersIniFilePath         string
+	charactersFilePath            string
 	configFilePath                string
 	modKernel32                   = syscall.NewLazyDLL("kernel32.dll")
 	procQueryFullProcessImageName = modKernel32.NewProc("QueryFullProcessImageNameW")
@@ -78,14 +77,12 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// get the current dir
-	exeDir, err := getExecutableDir()
-	if err != nil {
-		runtime.LogErrorf(a.ctx, "Error retrieving executable directory: %v\n", err)
-		return
-	}
+	// Gets exe dir of program and store as var
+	getExecutableDir()
 
-	configFilePath = filepath.Join(exeDir, "config.ini")
+	runtime.LogPrintf(a.ctx, "configFilePath : %s\n", configFilePath)
+	runtime.LogPrintf(a.ctx, "charactersFilePath : %s\n", charactersFilePath)
+
 	// check if config  ini file exists
 	configFile, err, exists := loadINIFile(configFilePath)
 	if !exists {
@@ -94,8 +91,6 @@ func (a *App) startup(ctx context.Context) {
 	if err != nil {
 		runtime.LogError(a.ctx, "Error with the ini file")
 	}
-
-	charactersIniFilePath = filepath.Join(exeDir, "characters.ini")
 
 	// Initialize our array
 	a.refreshAndUpdateCharacterList(exists)
