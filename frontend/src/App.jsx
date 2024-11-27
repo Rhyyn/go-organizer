@@ -83,9 +83,11 @@ function App() {
                 setDofusWindows(result);
                 let heightToAdd = 0;
                 result.forEach((element) => {
-                    heightToAdd += 25;
+                    heightToAdd += 45;
                 });
                 WindowSetSize(392, 350 + heightToAdd);
+
+                ///////////
                 setCharListHeight({
                     length: result.length,
                     height: heightToAdd,
