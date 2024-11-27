@@ -54,7 +54,6 @@ var (
 	isOrganizerRunning            bool
 	isKeyPressed                  map[int32]bool
 	isMousePressed                map[int32]bool
-	characterFileMutex            sync.Mutex
 	configFileMutex               sync.Mutex
 	keyboardChan                  chan types.KeyboardEvent
 	mouseChan                     chan types.MouseEvent
@@ -80,8 +79,8 @@ func (a *App) startup(ctx context.Context) {
 	// Gets exe dir of program and store as var
 	getExecutableDir()
 
-	runtime.LogPrintf(a.ctx, "configFilePath : %s\n", configFilePath)
-	runtime.LogPrintf(a.ctx, "charactersFilePath : %s\n", charactersFilePath)
+	// runtime.LogPrintf(a.ctx, "configFilePath : %s\n", configFilePath)
+	// runtime.LogPrintf(a.ctx, "charactersFilePath : %s\n", charactersFilePath)
 
 	// check if config  ini file exists
 	configFile, err, exists := loadINIFile(configFilePath)
@@ -120,7 +119,8 @@ func (a *App) startup(ctx context.Context) {
 	// https://github.com/AutoHotkey/AutoHotkey/blob/581114c1c7bb3890ff61cf5f6e1f1201cd8c8b78/source/window.cpp#L89
 	SimulateAltPress()
 
-	a.handleWindowPosition()
+	// plan to save position and monitors
+	// a.handleWindowPosition()
 
 	// Start hooks
 	go a.foregroundWindowsHook()

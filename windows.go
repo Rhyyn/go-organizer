@@ -2,14 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"strings"
 	"syscall"
 	"time"
-	"unsafe"
 
-	"github.com/go-vgo/robotgo"
 	"github.com/gonutz/w32/v2"
 	"github.com/lxn/win"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -22,91 +18,91 @@ import (
 // All credit goes to their contributors
 
 var (
-	procAttachThreadInput    = user32.NewProc("AttachThreadInput")
-	procBringWindowToTop     = user32.NewProc("BringWindowToTop")
-	isHungAppWindow          = user32.NewProc("IsHungAppWindow")
-	user32                   = syscall.NewLazyDLL("user32.dll")
-	enumDisplayMonitors      = user32.NewProc("EnumDisplayMonitors")
-	monitorFromWindow        = user32.NewProc("MonitorFromWindow")
-	ATTEMPT_SET_FORE         bool
-	basePosition             WindowPosition
-	MONITOR_DEFAULTTOPRIMARY DWORD
-	monitor                  HMONITOR
+	procAttachThreadInput = user32.NewProc("AttachThreadInput")
+	procBringWindowToTop  = user32.NewProc("BringWindowToTop")
+	isHungAppWindow       = user32.NewProc("IsHungAppWindow")
+	user32                = syscall.NewLazyDLL("user32.dll")
+	// enumDisplayMonitors   = user32.NewProc("EnumDisplayMonitors")
+	// monitorFromWindow     = user32.NewProc("MonitorFromWindow")
+	ATTEMPT_SET_FORE bool
+	// basePosition             WindowPosition
+	// MONITOR_DEFAULTTOPRIMARY DWORD
+	// monitor                  HMONITOR
 )
 
-type WindowPosition struct {
-	X int
-	Y int
-}
-type RECT struct {
-	Left, Top, Right, Bottom int32
-}
-type (
-	HMONITOR HANDLE
-	HDC      HANDLE
-)
+// type WindowPosition struct {
+// 	X int
+// 	Y int
+// }
+// type RECT struct {
+// 	Left, Top, Right, Bottom int32
+// }
+// type (
+// 	HMONITOR HANDLE
+// 	HDC      HANDLE
+// )
 
-func (a *App) monitorEnumProc(hMonitor HMONITOR, hdcMonitor HDC, lprcMonitor *RECT, dwData LPARAM) uintptr {
-	fmt.Printf("Monitor Handle: %v\n", hMonitor)
-	fmt.Printf("Monitor Rect: Left=%d, Top=%d, Right=%d, Bottom=%d\n",
-		lprcMonitor.Left, lprcMonitor.Top, lprcMonitor.Right, lprcMonitor.Bottom)
+// func (a *App) monitorEnumProc(hMonitor HMONITOR, hdcMonitor HDC, lprcMonitor *RECT, dwData LPARAM) uintptr {
+// 	fmt.Printf("Monitor Handle: %v\n", hMonitor)
+// 	fmt.Printf("Monitor Rect: Left=%d, Top=%d, Right=%d, Bottom=%d\n",
+// 		lprcMonitor.Left, lprcMonitor.Top, lprcMonitor.Right, lprcMonitor.Bottom)
 
-	return 1
-}
+// 	return 1
+// }
 
-func EnumDisplayMonitors(hdc HDC, clip *RECT, lpfnEnum, data uintptr) error {
-	ret, _, _ := enumDisplayMonitors.Call(
-		uintptr(hdc),
-		uintptr(unsafe.Pointer(clip)),
-		lpfnEnum,
-		data,
-	)
-	if ret == 0 {
-		return fmt.Errorf("EnumDisplayMonitors returned FALSE")
-	}
-	return nil
-}
+// func EnumDisplayMonitors(hdc HDC, clip *RECT, lpfnEnum, data uintptr) error {
+// 	ret, _, _ := enumDisplayMonitors.Call(
+// 		uintptr(hdc),
+// 		uintptr(unsafe.Pointer(clip)),
+// 		lpfnEnum,
+// 		data,
+// 	)
+// 	if ret == 0 {
+// 		return fmt.Errorf("EnumDisplayMonitors returned FALSE")
+// 	}
+// 	return nil
+// }
 
-func (a *App) getAllMonitors() {
-	enumProc := syscall.NewCallback(a.monitorEnumProc)
-	err := EnumDisplayMonitors(0, nil, enumProc, 0)
-	if err != nil {
-		log.Fatalf("Failed to enumerate monitors: %v", err)
-	}
-}
+// func (a *App) getAllMonitors() {
+// 	enumProc := syscall.NewCallback(a.monitorEnumProc)
+// 	err := EnumDisplayMonitors(0, nil, enumProc, 0)
+// 	if err != nil {
+// 		log.Fatalf("Failed to enumerate monitors: %v", err)
+// 	}
+// }
 
-func MonitorFromWindow(hwnd HWND, dwFlags uint32) HMONITOR {
-	ret, _, _ := monitorFromWindow.Call(monitorFromWindow.Addr(), 2,
-		uintptr(hwnd),
-		uintptr(dwFlags),
-		0)
+// func MonitorFromWindow(hwnd HWND, dwFlags uint32) HMONITOR {
+// 	ret, _, _ := monitorFromWindow.Call(monitorFromWindow.Addr(), 2,
+// 		uintptr(hwnd),
+// 		uintptr(dwFlags),
+// 		0)
 
-	return HMONITOR(ret)
-}
+// 	return HMONITOR(ret)
+// }
 
-// This needs to trigger at startup
-// Need to check DPI
-func (a *App) handleWindowPosition() {
-	a.getAllMonitors()
+// // This needs to trigger at startup
+// // Need to check DPI
+// func (a *App) handleWindowPosition() {
+// 	a.getAllMonitors()
 
-	// We save the base position on startup
-	basePosition.X, basePosition.Y = runtime.WindowGetPosition(a.ctx)
-	// save current monitor that window is on, if no monitor, sets to primary
-	hwnd := HWND(w32.GetCurrentProcess()) // could do native, but cba
-	monitor = MonitorFromWindow(hwnd, 3)
+// 	// We save the base position on startup
+// 	basePosition.X, basePosition.Y = runtime.WindowGetPosition(a.ctx)
+// 	// save current monitor that window is on, if no monitor, sets to primary
+// 	hwnd := HWND(w32.GetCurrentProcess()) // could do native, but cba
+// 	monitor = MonitorFromWindow(hwnd, 3)
 
-	// func to compare to config saved
-	// if != enumMonitors
-	// if monitor handle not present in monitors
-	// sets to primary and save
-	// MonitorHandle = x
-	// FullWindowPosition = x, y
-	// OverlayWindowPosition = x, y
-	// else check for saved pos
-	// if pos not of bound
-	// sets pos check bounds
-	// if out set to center or bound?
-}
+// 	// func to compare to config saved
+// 	// if != enumMonitors
+// 	// if monitor handle not present in monitors
+// 	// sets to primary and save
+// 	// MonitorHandle = x
+// 	// FullWindowPosition = x, y
+// 	// OverlayWindowPosition = x, y
+// 	// else check for saved pos
+// 	// if pos not of bound
+// 	// sets pos check bounds
+// 	// if out set to center or bound?
+// }
 
 func (a *App) UpdateTemporaryDofusWindows(tempChars []WindowInfo) {
 	if tempChars != nil || len(tempChars) != 0 {
@@ -138,10 +134,10 @@ func (a *App) WinActivate(targetWindow w32.HWND) w32.HWND {
 	origForegroundWindow := a.getForegroundWindow()
 	// Check if our window is valid, returns original if not
 	if !a.isWindowValid(targetWindow) {
-		runtime.LogPrintf(a.ctx, "Target window is not valid. %v", targetWindow)
+		// runtime.LogPrintf(a.ctx, "Target window is not valid. %v", targetWindow)
 		return origForegroundWindow
 	}
-	fmt.Printf("targetWindow : %v\n origForegroundWindow: %v\n", targetWindow, origForegroundWindow)
+	// fmt.Printf("targetWindow : %v\n origForegroundWindow: %v\n", targetWindow, origForegroundWindow)
 
 	return a.setForegroundWindowEx(targetWindow, origForegroundWindow)
 }
@@ -155,7 +151,7 @@ func (a *App) refreshAndUpdateCharacterList(exists bool) {
 		return EnumWindowsCallback(a.ctx, hwnd, a)
 	})
 
-	runtime.LogPrintf(a.ctx, "Looped through Windows and inside refreshAndUpdateCharacterList with exists : %t", exists)
+	// runtime.LogPrintf(a.ctx, "Looped through Windows and inside refreshAndUpdateCharacterList with exists : %t", exists)
 
 	// This stinks
 	if !exists {
@@ -165,7 +161,7 @@ func (a *App) refreshAndUpdateCharacterList(exists bool) {
 	// Should order before updating front
 	a.UpdateDofusWindowsOrder(a.DofusWindows)
 
-	runtime.LogPrintf(a.ctx, "end of refresh updating Dofus windows")
+	// runtime.LogPrintf(a.ctx, "end of refresh updating Dofus windows")
 }
 
 // Iterate through all active Windows and populate a.DofusWindows with them
@@ -192,7 +188,7 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 			Class:         class,
 		})
 
-		runtime.LogPrintf(ctx, "Processed window: %s ", title)
+		// runtime.LogPrintf(ctx, "Processed window: %s ", title)
 	}
 	return true
 }
@@ -254,7 +250,6 @@ func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]Window
 				}
 			}
 		} else {
-			fmt.Printf("Adding to newOrderUnknown: %v\n", loggedChar.CharacterName)
 			if _, exists := processedHWND[loggedChar.Hwnd]; !exists {
 				processed[loggedChar.CharacterName] = true
 				processedHWND[loggedChar.Hwnd] = true
@@ -397,6 +392,7 @@ func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 	// Check if minimized, restore if it is
 	minimized := a.isWindowMinimized(targetWindow)
 	if minimized {
+		// runtime.LogPrint(a.ctx, "Window was minimized.. restoring..")
 		w32.ShowWindow(targetWindow, 9) // 9 == SW_RESTORE
 	}
 
@@ -407,6 +403,7 @@ func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 	ATTEMPT_SET_FORE = false
 	ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
 	if ATTEMPT_SET_FORE {
+		// runtime.LogPrint(a.ctx, "First Activation sucess..")
 		// currentWindow := a.getForegroundWindow()
 		// procBringWindowToTop.Call(uintptr(currentWindow))
 		return targetWindow
@@ -438,11 +435,12 @@ func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 	}
 
 	// runtime.LogPrint(a.ctx, "Activation with threads..\n")
-	robotgo.KeyTap("alt")
+	// robotgo.KeyTap("alt")
+	SimulateAltPress()
 	ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
 	// If success we return
 	if ATTEMPT_SET_FORE {
-		// runtime.LogPrint(a.ctx, "Deatching threads...\n")
+		// runtime.LogPrint(a.ctx, "Activation with threads success.. bringing window to top")
 		// !!! IMPORTANT !!! ---- Detach threads
 		detachThreadInputs(currentThread, activeThread, windowThread)
 		return newForeWindow
@@ -450,8 +448,8 @@ func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 		// If it did not succeed we send double alt and we try again
 		// runtime.LogPrint(a.ctx, "Activation with threads failed.. sending double alt..")
 		// runtime.LogPrint(a.ctx, "Double tap activation")
-		robotgo.KeyTap("alt")
-		robotgo.KeyTap("alt")
+		SimulateAltPress()
+		SimulateAltPress()
 
 		// Last try
 		ATTEMPT_SET_FORE = a.attemptSetForeground(targetWindow)
@@ -462,7 +460,7 @@ func (a *App) setForegroundWindowEx(targetWindow w32.HWND, origForegroundWindow 
 	// If success bring to top
 	// Should not be needed
 	if ATTEMPT_SET_FORE {
-		// runtime.LogPrint(a.ctx, "Activation with threads success.. bringing window to top")
+		// runtime.LogPrint(a.ctx, "Activation after double tap alt with threads success.. bringing window to top")
 		// runtime.LogPrintf(a.ctx, "procBringWindowToTop")
 		currentWindow := a.getForegroundWindow()
 		procBringWindowToTop.Call(uintptr(currentWindow))

@@ -96,7 +96,7 @@ func (a *App) foregroundWindowsHook() {
 
 	winEvHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, 0, ActiveWinEventHook, 0, 0, WINEVENT_OUTOFCONTEXT|WINEVENT_SKIPOWNPROCESS)
 	// log.Println("Windows Event Hook: ")
-	// log.Println("Windows Event Hook: ", winEvHook)
+	log.Println("Windows Event Hook: ", winEvHook)
 
 	for {
 

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-vgo/robotgo"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -24,12 +23,11 @@ func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (st
 	value := fmt.Sprintf("%d,%s", keycode, strings.ToUpper(keyname))
 
 	// runtime.LogPrintf(a.ctx, "value saved : %v", value)
+	// delete existing
 	for existingKeycode, keybind := range keybindMap {
 		if keybind.Action == keybindName {
-			// If the Action matches, delete the old keybind
 			delete(keybindMap, existingKeycode)
-			fmt.Printf("Removed old keybind with action '%s' at keycode %d\n", keybindName, existingKeycode)
-			break // Exit the loop once the old keybind is found and removed
+			break
 		}
 	}
 
@@ -46,7 +44,7 @@ func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (st
 		KeyName: strings.ToUpper(keyname),
 	}
 
-	runtime.LogPrintf(a.ctx, "Updated Keybinds to : %v", keybindMap)
+	// runtime.LogPrintf(a.ctx, "Updated Keybinds to : %v", keybindMap)
 	a.KeybindUpdatedEvent()
 
 	return "sucess", nil
@@ -127,12 +125,31 @@ func (a *App) GetAllKeyBindings() map[int32]Keybinds {
 		KeyName: nextName,
 	}
 
-	fmt.Printf("Update keybinds to %v\n", keybindMap)
+	// fmt.Printf("Update keybinds to %v\n", keybindMap)
 	return keybindMap
 }
 
+var procKeybdEvent = user32.NewProc("keybd_event")
+
+const (
+	VK_MENU         = 0x12   // Virtual Key Code for Alt
+	KEYEVENTF_KEYUP = 0x0002 // Key release flag
+)
+
 // Simulate Alt, down+up, used to make dumbass microsoft windows let us use it's SetForeground api
 func SimulateAltPress() {
-	robotgo.KeyTap("alt")
+	procKeybdEvent.Call(
+		uintptr(VK_MENU),
+		0,
+		uintptr(KEYEVENTF_KEYUP),
+		0,
+	)
 	time.Sleep(50 * time.Millisecond)
 }
+
+// Simulate Alt, down+up, used to make dumbass microsoft let us use it's SetForeground api,
+// We're not using native because for some reason it makes it worse?
+// func SimulateAltPress() {
+// 	robotgo.KeyTap("alt")
+// 	time.Sleep(50 * time.Millisecond)
+// }

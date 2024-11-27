@@ -33,7 +33,7 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 	iniFile.DeleteSection("Characters")
 
 	section := iniFile.Section("Characters")
-	runtime.LogPrintf(a.ctx, "Saving character list: %v\n", dofusWindows)
+	// runtime.LogPrintf(a.ctx, "Saving character list: %v\n", dofusWindows)
 	for _, window := range dofusWindows {
 		if !strings.Contains(window.Title, "Dofus") {
 			section.Key(window.CharacterName).SetValue("")
@@ -45,7 +45,7 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 		runtime.LogPrintf(a.ctx, "saving INI file: %v", err)
 	}
 
-	runtime.LogPrint(a.ctx, "Dofus windows order updated successfully!\n")
+	// runtime.LogPrint(a.ctx, "Dofus windows order updated successfully!\n")
 	a.DofusWindows = dofusWindows
 	return nil
 }
@@ -60,13 +60,14 @@ func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
 	section.Key("PreviousChar").SetValue("113,F2")
 	section.Key("NextChar").SetValue("114,F3")
 
-	windowSection, err := cfg.GetSection("Window")
-	if err != nil {
-		windowSection = cfg.Section("Window")
-	}
-	windowSection.Key("MonitorHandle")
-	windowSection.Key("FullPosition")
-	windowSection.Key("OverlayPosition")
+	// Not used for now, might be for V2
+	// windowSection, err := cfg.GetSection("Window")
+	// if err != nil {
+	// 	windowSection = cfg.Section("Window")
+	// }
+	// windowSection.Key("MonitorHandle")
+	// windowSection.Key("FullPosition")
+	// windowSection.Key("OverlayPosition")
 
 	// if section.Key("StopOrganizer").String() == "" {
 	// }
@@ -78,8 +79,6 @@ func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
 	err = cfg.SaveTo(filepath.Join(exeDir, "config.ini"))
 	if err != nil {
 		runtime.LogErrorf(a.ctx, "Error saving config file: %v", err)
-	} else {
-		runtime.LogPrintf(a.ctx, "Config file created/updated successfully")
 	}
 }
 

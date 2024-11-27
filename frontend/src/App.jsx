@@ -7,7 +7,12 @@ import reduceWhite from "./assets/GUI_icons/reduceWhite.png";
 import expandWhite from "./assets/GUI_icons/expandWhite.png";
 import expandRight from "./assets/GUI_icons/expandRight.png";
 import expandDown from "./assets/GUI_icons/expandDown.png";
-import { EventsOff, EventsOn, WindowSetSize } from "../wailsjs/runtime/runtime";
+import {
+    EventsOff,
+    EventsOn,
+    WindowGetPosition,
+    WindowSetSize,
+} from "../wailsjs/runtime/runtime";
 import "./App.css";
 import {
     GetDofusWindows,
@@ -33,6 +38,10 @@ function App() {
     const [nextKey, setNextKey] = useState("");
     const [stopOrganizerKey, setStopOrganizerKey] = useState("");
     const [isOnTop, setIsOnTop] = useState(false);
+    const [charListHeight, setCharListHeight] = useState({
+        length: 0,
+        height: 0,
+    });
 
     // First run of the app to get keycodes/keybinds
     useEffect(() => {
@@ -68,12 +77,19 @@ function App() {
         });
     }
 
-    // TODO: use event updatedCharacterOrder instead?
     function getDofusWindows() {
         GetDofusWindows().then((result) => {
             if (result !== null) {
                 setDofusWindows(result);
-                console.log(result);
+                let heightToAdd = 0;
+                result.forEach((element) => {
+                    heightToAdd += 25;
+                });
+                WindowSetSize(392, 350 + heightToAdd);
+                setCharListHeight({
+                    length: result.length,
+                    height: heightToAdd,
+                });
             }
         });
     }
@@ -188,20 +204,20 @@ function App() {
     const [windowOverlayPosition, setWindowOverlayPosition] = useState({});
 
     const handleWindowMode = async () => {
-        if (isWindowFull) {
-            WindowSetSize(200, 46);
-            setIsWindowFull(false);
-        } else {
-            WindowSetSize(392, 800);
-            setIsWindowFull(true);
+        if (dofusWindows.length > 0) {
+            if (isWindowFull) {
+                handleAlwaysOntop();
+                WindowSetSize(81 + 43 * charListHeight.length, 46);
+                setIsWindowFull(false);
+            } else {
+                WindowSetSize(392, 350 + charListHeight.height);
+                setIsWindowFull(true);
+            }
         }
     };
 
-    const handleOverlayListDirection = () => {};
-
     const [activeChar, setActiveChar] = useState(null);
     EventsOn("CharSelectedEvent", (activeChar) => {
-        console.log(activeChar);
         setActiveChar(activeChar);
     });
 
@@ -244,7 +260,15 @@ function App() {
                         ) : (
                             <div className="windows-container">
                                 {dofusWindows.map((window, index) => (
-                                    <div className="window-item" key={index}>
+                                    <div
+                                        // className="window-item"
+                                        className={`window-item ${
+                                            activeChar === window.hwnd
+                                                ? "char-active"
+                                                : "char-inactive"
+                                        }`}
+                                        key={index}
+                                    >
                                         <div className="left-container">
                                             <div
                                                 className="character-name"
@@ -457,6 +481,7 @@ function App() {
                             </select>
                         </label>
                     </div>
+                    <footer className="footer" style={{ widows: "1" }}></footer>
                 </div>
             ) : (
                 <div className="overlay-mode" style={{ widows: "1" }}>
@@ -482,7 +507,7 @@ function App() {
                                             ? "char-active"
                                             : "char-inactive"
                                     }`}
-                                    key={window.CharacterName}
+                                    key={window.hwnd}
                                     style={{ widows: "2" }}
                                 >
                                     <img
@@ -502,6 +527,10 @@ function App() {
                             ))}
                         </div>
                     )}
+                    <div
+                        className="overlay-footer"
+                        style={{ widows: "1" }}
+                    ></div>
                 </div>
             )}
         </div>

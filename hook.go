@@ -8,11 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gonutz/w32/v2"
 	"github.com/moutend/go-hook/pkg/keyboard"
 	"github.com/moutend/go-hook/pkg/mouse"
 	"github.com/moutend/go-hook/pkg/types"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 func (a *App) ActivateAction(action string) {
@@ -26,13 +24,13 @@ func (a *App) ActivateAction(action string) {
 
 // Used to Pause Organizer
 func (a *App) PauseHook() {
-	runtime.LogPrint(a.ctx, "pausing hook")
+	// runtime.LogPrint(a.ctx, "pausing hook")
 	isOrganizerRunning = false
 }
 
 // Used to Resume Organizer
 func (a *App) ResumeHook() {
-	runtime.LogPrint(a.ctx, "resuming hook")
+	// runtime.LogPrint(a.ctx, "resuming hook")
 	isOrganizerRunning = true
 }
 
@@ -96,10 +94,17 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 	return false
 }
 
-func (a *App) handleDebounce(eventKey int32) {
+func (a *App) handleKeyDebounce(eventKey int32) {
 	if time.Since(lastInputTime) > (300 * time.Millisecond) {
 		lastInputTime = time.Now()
 		a.handleKeyDown(eventKey)
+	}
+}
+
+func (a *App) handleMouseDebounce(eventKey int32) {
+	if time.Since(lastInputTime) > (300 * time.Millisecond) {
+		lastInputTime = time.Now()
+		a.handleMouseDown(eventKey)
 	}
 }
 
@@ -115,15 +120,7 @@ func (a *App) GoHook() error {
 		case kEvent := <-keyboardChan:
 			switch kEvent.Message {
 			case types.WM_KEYDOWN:
-				a.handleDebounce(int32(kEvent.VKCode))
-				if int32(kEvent.VKCode) == 118 {
-					foreHWND := a.getForegroundWindow()
-					activeHWND := w32.GetActiveWindow()
-					titleForeground := w32.GetWindowText(foreHWND)
-					titleActive := w32.GetWindowText(activeHWND)
-					fmt.Printf("current foreground : %s", titleForeground)
-					fmt.Printf("current active : %s", titleActive)
-				}
+				a.handleKeyDebounce(int32(kEvent.VKCode))
 			case types.WM_KEYUP:
 				a.handleKeyUp(int32(kEvent.VKCode))
 			}
@@ -131,7 +128,7 @@ func (a *App) GoHook() error {
 			switch mEvent.Message {
 			case WM_XBUTTONDOWN:
 				highOrder := int((mEvent.MouseData >> 16) & 0xFFFF)
-				a.handleMouseDown(int32(highOrder)) // X BUTTON 1
+				a.handleMouseDebounce(int32(highOrder)) // X BUTTON 1
 			case WM_XBUTTONUP:
 				highOrder := int((mEvent.MouseData >> 16) & 0xFFFF)
 				a.handleMouseUp(int32(highOrder)) // X BUTTON 1
