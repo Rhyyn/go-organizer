@@ -208,7 +208,9 @@ function App() {
     const handleWindowMode = async () => {
         if (dofusWindows.length > 0) {
             if (isWindowFull) {
-                handleAlwaysOntop();
+                if (!isOnTop) {
+                    handleAlwaysOntop();
+                }
                 WindowSetSize(81 + 43 * charListHeight.length, 46);
                 setIsWindowFull(false);
             } else {
