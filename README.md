@@ -25,6 +25,7 @@ Les boutons :
 
 Autre Fonctionnalité :
 - Cliquer sur le nom d'un personnage passe alors sa fenêtre au premier plan
+- L'application s'arrête automatiquement au bout d'une heure sans utilisation.
 
 ## EN
 
@@ -44,6 +45,7 @@ The buttons:
 
 Other functionality:
 - Clicking on a character name will activate its window to the foreground.
+- The app will stop listening to keybinds after one hour of inactivity.
 
 
 Knowns Bugs :
