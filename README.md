@@ -7,6 +7,10 @@
 
 ![Screenshot 2024-12-27 155155](https://github.com/user-attachments/assets/06567361-8fba-4be0-8e25-81aeea7c00c6)
 
+### Little to no memory usage
+
+![Screenshot 2024-12-27 160148](https://github.com/user-attachments/assets/877f46a3-d774-4a4d-83b8-2c710ac7c739)
+
 ## FR (English below)
 
 ### Un organiseur pour Dofus Unity en Golang, **CECI N'EST PAS UN LOGICIEL DE TRICHE**, aucune automatisation de clic / déplacements / échanges etc..
