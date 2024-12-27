@@ -18,8 +18,8 @@ func main() {
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "go-organizer",
-		Width:  512,
-		Height: 800,
+		Width:  392,
+		Height: 350,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -28,8 +28,14 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
-		DisableResize: false,
-		OnBeforeClose: app.beforeClose,
+		DisableResize:   false,
+		OnBeforeClose:   app.beforeClose,
+		Frameless:       true,
+		CSSDragProperty: "widows",
+		CSSDragValue:    "1",
+		MinWidth:        1,
+		MinHeight:       1,
+		MaxWidth:        420,
 	})
 	if err != nil {
 		println("Error:", err.Error())

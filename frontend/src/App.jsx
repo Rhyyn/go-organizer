@@ -1,9 +1,18 @@
-import { useState, useEffect } from "react";
-// import logo from './assets/images/logo-universal.png';
+import { useState, useEffect, useRef } from "react";
+import { TitleBar } from "./TitleBar";
 import classIcons from "./ClassIcons";
 import upArrow from "./assets/GUI_icons/arrow-up.png";
 import downArrow from "./assets/GUI_icons/arrow-down.png";
-import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
+import reduceWhite from "./assets/GUI_icons/reduceWhite.png";
+import expandWhite from "./assets/GUI_icons/expandWhite.png";
+import expandRight from "./assets/GUI_icons/expandRight.png";
+import expandDown from "./assets/GUI_icons/expandDown.png";
+import {
+    EventsOff,
+    EventsOn,
+    WindowGetPosition,
+    WindowSetSize,
+} from "../wailsjs/runtime/runtime";
 import "./App.css";
 import {
     GetDofusWindows,
@@ -20,7 +29,7 @@ import {
 } from "../wailsjs/go/main/App";
 
 function App() {
-    const [isFirst, setIsFirst] = useState(true);
+    const isFirstRun = useRef(true);
     const [isActive, setIsActive] = useState(false);
     const [dofusWindows, setDofusWindows] = useState([]);
     const [keycodes, setKeycodes] = useState([]);
@@ -28,15 +37,20 @@ function App() {
     const [previousKey, setPreviousKey] = useState("");
     const [nextKey, setNextKey] = useState("");
     const [stopOrganizerKey, setStopOrganizerKey] = useState("");
+    const [isOnTop, setIsOnTop] = useState(false);
+    const [charListHeight, setCharListHeight] = useState({
+        length: 0,
+        height: 0,
+    });
 
     // First run of the app to get keycodes/keybinds
     useEffect(() => {
-        if (isFirst) {
+        if (isFirstRun.current) {
             getKeyCodes();
             FetchKeybinds();
+            isFirstRun.current = false; // Mark as done after the first run
         }
-        setIsFirst(false);
-    }, [isFirst]);
+    }, []);
 
     // TODO: check this
     useEffect(() => {
@@ -63,12 +77,21 @@ function App() {
         });
     }
 
-    // TODO: use event updatedCharacterOrder instead?
     function getDofusWindows() {
         GetDofusWindows().then((result) => {
             if (result !== null) {
                 setDofusWindows(result);
-                console.log(result);
+                let heightToAdd = 0;
+                result.forEach((element) => {
+                    heightToAdd += 45;
+                });
+                WindowSetSize(392, 350 + heightToAdd);
+
+                ///////////
+                setCharListHeight({
+                    length: result.length,
+                    height: heightToAdd,
+                });
             }
         });
     }
@@ -87,6 +110,7 @@ function App() {
     // ask back to load order of saved characters
     async function loadOrder() {
         console.log("updating order..");
+        console.log(dofusWindows);
         await UpdateDofusWindowsOrder(dofusWindows)
             .then((result) => {
                 if (result.length != 0) {
@@ -97,8 +121,7 @@ function App() {
                 console.error("Failed to update Dofus windows order:", error);
             });
         // GetDofusWindows().then(updateWindows);
-        console.log("updatedorder.. to :");
-        console.log(dofusWindows);
+        // console.log("updatedorder.. to :");
     }
 
     // TODO: move should change the order
@@ -124,9 +147,14 @@ function App() {
         }
     };
 
+    // EmitsOn("KeybindsUpdate", () => {
+    //     FetchKeybinds();
+    // })
+
     // Fetch keybinds
     const FetchKeybinds = () => {
         GetAllKeyBindings().then((result) => {
+            console.log(result);
             Object.values(result).map((keybind) => {
                 switch (keybind.Action) {
                     case "StopOrganizer":
@@ -172,45 +200,322 @@ function App() {
         };
     }, [isActive]);
 
+    // 1 == full mode, 2 = Overlay mode
+    const [isWindowFull, setIsWindowFull] = useState(true);
+    const [windowFullPosition, setWindowFullPosition] = useState({});
+    const [windowOverlayPosition, setWindowOverlayPosition] = useState({});
+
+    const handleWindowMode = async () => {
+        if (dofusWindows.length > 0) {
+            if (isWindowFull) {
+                if (!isOnTop) {
+                    handleAlwaysOntop();
+                }
+                WindowSetSize(81 + 43 * charListHeight.length, 46);
+                setIsWindowFull(false);
+            } else {
+                WindowSetSize(392, 350 + charListHeight.height);
+                setIsWindowFull(true);
+            }
+        }
+    };
+
+    const [activeChar, setActiveChar] = useState(null);
+    EventsOn("CharSelectedEvent", (activeChar) => {
+        setActiveChar(activeChar);
+    });
+
+    const handleAlwaysOntop = () => {
+        SetAlwaysOnTop(!isOnTop);
+        setIsOnTop(!isOnTop);
+    };
+
     return (
         <div id="App">
-            <div className="menu-container">
-                <button className="btn" onClick={SetAlwaysOnTop}>
-                    Pin to top
-                </button>
-                <button className="btn" onClick={getDofusWindows}>
-                    Fetch
-                </button>
-                <button className="btn" onClick={loadOrder}>
-                    Load
-                </button>
-                <button className="btn" onClick={saveOrder}>
-                    Save
-                </button>
-            </div>
-            <div id="dofusWindowList">
-                {dofusWindows.length === 0 ? (
-                    <p>No Dofus windows found. Use Fetch</p>
-                ) : (
-                    <div className="windows-container">
-                        {dofusWindows.map((window, index) => (
-                            <div className="window-item" key={index}>
-                                <div className="left-container">
+            {isWindowFull ? (
+                <div className="full-mode">
+                    <TitleBar></TitleBar>
+                    <div className="menu-container">
+                        <button
+                            className={`btn ${isOnTop ? "on-top" : ""}`}
+                            onClick={handleAlwaysOntop}
+                        >
+                            Pin to top
+                        </button>
+                        <button className="btn" onClick={getDofusWindows}>
+                            Fetch
+                        </button>
+                        <button className="btn" onClick={loadOrder}>
+                            Load
+                        </button>
+                        <button className="btn" onClick={saveOrder}>
+                            Save
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => handleWindowMode()}
+                        className="button-to-overlay-mode"
+                    >
+                        Switch to Overlay Mode
+                    </button>
+                    <div id="dofusWindowList">
+                        {dofusWindows.length === 0 ? (
+                            <p>No Dofus windows found. Use Fetch</p>
+                        ) : (
+                            <div className="windows-container">
+                                {dofusWindows.map((window, index) => (
                                     <div
-                                        className="character-name"
-                                        title={`Click to activate ${window.CharacterName}`}
-                                        onClick={() => WinActivate(window.hwnd)}
+                                        // className="window-item"
+                                        className={`window-item ${
+                                            activeChar === window.hwnd
+                                                ? "char-active"
+                                                : "char-inactive"
+                                        }`}
+                                        key={index}
                                     >
-                                        {window.CharacterName}
+                                        <div className="left-container">
+                                            <div
+                                                className="character-name"
+                                                title={`Click to activate ${window.CharacterName}`}
+                                                onClick={() =>
+                                                    WinActivate(window.hwnd)
+                                                }
+                                            >
+                                                {window.CharacterName}
+                                            </div>
+                                            {/* |
+                                            <div className="class-name">
+                                                {window.Class}
+                                            </div> */}
+                                        </div>
+                                        <div className="icon-container">
+                                            <img
+                                                className="class-icon"
+                                                src={
+                                                    classIcons[
+                                                        window.Class.toLowerCase()
+                                                    ] || classIcons.default
+                                                }
+                                                alt={`${
+                                                    window.Class || "Default"
+                                                } Icon`}
+                                            ></img>
+                                        </div>
+                                        <div className="move-buttons-container">
+                                            <button
+                                                title="Move Up"
+                                                className="move-button"
+                                                onClick={() => moveUp(index)}
+                                                disabled={index === 0}
+                                            >
+                                                <img
+                                                    className="move-button-arrow"
+                                                    src={upArrow}
+                                                    id="downArrow"
+                                                    alt="downArrow"
+                                                />
+                                            </button>
+                                            <button
+                                                title="Move Down"
+                                                className="move-button"
+                                                onClick={() => moveDown(index)}
+                                                disabled={
+                                                    index ===
+                                                    dofusWindows.length - 1
+                                                }
+                                            >
+                                                <img
+                                                    className="move-button-arrow"
+                                                    src={downArrow}
+                                                    id="upArrow"
+                                                    alt="upArrow"
+                                                />
+                                            </button>
+                                        </div>
                                     </div>
-                                    |
-                                    <div className="class-name">
-                                        {window.Class}
-                                    </div>
-                                </div>
-                                <div className="icon-container">
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="toggle-container">
+                        <div className="up-toggle-container">
+                            <label
+                                className={`toggle-label ${
+                                    isActive ? "active" : "paused"
+                                }`}
+                            >
+                                Organizer is : {isActive ? "Active" : "Off"}
+                                <input
+                                    className={`custom-checkbox ${
+                                        isActive ? "active" : "paused"
+                                    }`}
+                                    type="checkbox"
+                                    checked={isActive}
+                                    onChange={handleActiveToggle}
+                                />
+                            </label>
+                        </div>
+                    </div>
+                    <div className="bottom-container">
+                        <label className="dropdown-label">
+                            Toggle Organizer :
+                            <select
+                                className="dropdown"
+                                value={stopOrganizerKey}
+                                onKeyDown={(event) => {
+                                    // might need some more
+                                    event.preventDefault();
+                                }}
+                                onChange={async (event) => {
+                                    const selectedOption =
+                                        event.target.options[
+                                            event.target.selectedIndex
+                                        ];
+
+                                    try {
+                                        await saveKeybinds(
+                                            parseInt(
+                                                selectedOption.dataset.key
+                                            ),
+                                            selectedOption.value.toLowerCase(),
+                                            "StopOrganizer"
+                                        );
+                                    } catch (error) {
+                                        console.error(
+                                            "Error saving keybind or fetching keys:",
+                                            error
+                                        );
+                                    }
+                                }}
+                            >
+                                {keycodes.map((key) => (
+                                    <option
+                                        key={key.Code}
+                                        value={key.Name}
+                                        data-key={key.Code}
+                                        className="dropdown-option"
+                                    >
+                                        {key.Name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="dropdown-label">
+                            Previous Character :
+                            <select
+                                className="dropdown"
+                                value={previousKey.toLowerCase()}
+                                onKeyDown={(event) => {
+                                    event.preventDefault();
+                                }}
+                                onChange={async (event) => {
+                                    const selectedOption =
+                                        event.target.options[
+                                            event.target.selectedIndex
+                                        ];
+
+                                    try {
+                                        await saveKeybinds(
+                                            parseInt(
+                                                selectedOption.dataset.key
+                                            ),
+                                            selectedOption.value.toLowerCase(),
+                                            "PreviousChar"
+                                        );
+                                    } catch (error) {
+                                        console.error(
+                                            "Error saving keybind or fetching keys:",
+                                            error
+                                        );
+                                    }
+                                }}
+                            >
+                                {keycodes.map((key) => (
+                                    <option
+                                        key={key.Code}
+                                        value={key.Name.toLowerCase()}
+                                        data-key={key.Code}
+                                        className="dropdown-option"
+                                    >
+                                        {key.Name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="dropdown-label">
+                            Next Character :
+                            <select
+                                className="dropdown"
+                                value={nextKey}
+                                onKeyDown={(event) => {
+                                    event.preventDefault();
+                                }}
+                                onChange={async (event) => {
+                                    const selectedOption =
+                                        event.target.options[
+                                            event.target.selectedIndex
+                                        ];
+
+                                    try {
+                                        await saveKeybinds(
+                                            parseInt(
+                                                selectedOption.dataset.key
+                                            ),
+                                            selectedOption.value.toLowerCase(),
+                                            "NextChar"
+                                        );
+                                    } catch (error) {
+                                        console.error(
+                                            "Error saving keybind or fetching keys:",
+                                            error
+                                        );
+                                    }
+                                }}
+                            >
+                                {keycodes.map((key) => (
+                                    <option
+                                        key={key.Code}
+                                        value={key.Name}
+                                        data-key={key.Code}
+                                        className="dropdown-option"
+                                    >
+                                        {key.Name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+                    <footer className="footer" style={{ widows: "1" }}></footer>
+                </div>
+            ) : (
+                <div className="overlay-mode" style={{ widows: "1" }}>
+                    <img
+                        src={expandWhite}
+                        className="expand-icon"
+                        alt="expand window"
+                        title="Full Mode"
+                        onClick={() => handleWindowMode()}
+                        style={{ widows: "2" }}
+                    ></img>
+                    {dofusWindows.length === 0 ? (
+                        <span>
+                            No Dofus windows found. Use Fetch in full mode
+                        </span>
+                    ) : (
+                        <div className="overlay-characters-container">
+                            {dofusWindows.map((window, index) => (
+                                <div
+                                    // fix this, it's not working properly
+                                    className={`overlay-character-item ${
+                                        activeChar === window.hwnd
+                                            ? "char-active"
+                                            : "char-inactive"
+                                    }`}
+                                    key={window.hwnd}
+                                    style={{ widows: "2" }}
+                                >
                                     <img
-                                        className="class-icon"
+                                        className="overlay-class-icon"
                                         src={
                                             classIcons[
                                                 window.Class.toLowerCase()
@@ -219,185 +524,19 @@ function App() {
                                         alt={`${
                                             window.Class || "Default"
                                         } Icon`}
+                                        style={{ widows: "2" }}
+                                        onClick={() => WinActivate(window.hwnd)}
                                     ></img>
                                 </div>
-                                <div className="move-buttons-container">
-                                    <button
-                                        title="Move Up"
-                                        className="move-button"
-                                        onClick={() => moveUp(index)}
-                                        disabled={index === 0}
-                                    >
-                                        <img
-                                            className="move-button-arrow"
-                                            src={upArrow}
-                                            id="downArrow"
-                                            alt="downArrow"
-                                        />
-                                    </button>
-                                    <button
-                                        title="Move Down"
-                                        className="move-button"
-                                        onClick={() => moveDown(index)}
-                                        disabled={
-                                            index === dofusWindows.length - 1
-                                        }
-                                    >
-                                        <img
-                                            className="move-button-arrow"
-                                            src={downArrow}
-                                            id="upArrow"
-                                            alt="upArrow"
-                                        />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="toggle-container">
-                <div className="up-toggle-container">
-                    <label
-                        className={`toggle-label ${
-                            isActive ? "active" : "paused"
-                        }`}
-                    >
-                        Organizer is : {isActive ? "Active" : "Off"}
-                        <input
-                            className={`custom-checkbox ${
-                                isActive ? "active" : "paused"
-                            }`}
-                            type="checkbox"
-                            checked={isActive}
-                            onChange={handleActiveToggle}
-                        />
-                    </label>
+                            ))}
+                        </div>
+                    )}
+                    <div
+                        className="overlay-footer"
+                        style={{ widows: "1" }}
+                    ></div>
                 </div>
-            </div>
-            <div className="bottom-container">
-                <label className="dropdown-label">
-                    Toggle Organizer :
-                    <select
-                        className="dropdown"
-                        value={stopOrganizerKey}
-                        onKeyDown={(event) => {
-                            // might need some more
-                            event.preventDefault();
-                        }}
-                        onChange={async (event) => {
-                            const selectedOption =
-                                event.target.options[
-                                    event.target.selectedIndex
-                                ];
-
-                            try {
-                                await saveKeybinds(
-                                    parseInt(selectedOption.dataset.key),
-                                    selectedOption.value.toLowerCase(),
-                                    "StopOrganizer"
-                                );
-                            } catch (error) {
-                                console.error(
-                                    "Error saving keybind or fetching keys:",
-                                    error
-                                );
-                            }
-                        }}
-                    >
-                        {keycodes.map((key) => (
-                            <option
-                                key={key.Code}
-                                value={key.Name}
-                                data-key={key.Code}
-                                className="dropdown-option"
-                            >
-                                {key.Name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="dropdown-label">
-                    Previous Character :
-                    <select
-                        className="dropdown"
-                        value={previousKey.toLowerCase()}
-                        onKeyDown={(event) => {
-                            event.preventDefault();
-                        }}
-                        onChange={async (event) => {
-                            const selectedOption =
-                                event.target.options[
-                                    event.target.selectedIndex
-                                ];
-
-                            try {
-                                await saveKeybinds(
-                                    parseInt(selectedOption.dataset.key),
-                                    selectedOption.value.toLowerCase(),
-                                    "PreviousChar"
-                                );
-                            } catch (error) {
-                                console.error(
-                                    "Error saving keybind or fetching keys:",
-                                    error
-                                );
-                            }
-                        }}
-                    >
-                        {keycodes.map((key) => (
-                            <option
-                                key={key.Code}
-                                value={key.Name.toLowerCase()}
-                                data-key={key.Code}
-                                className="dropdown-option"
-                            >
-                                {key.Name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="dropdown-label">
-                    Next Character :
-                    <select
-                        className="dropdown"
-                        value={nextKey}
-                        onKeyDown={(event) => {
-                            event.preventDefault();
-                        }}
-                        onChange={async (event) => {
-                            const selectedOption =
-                                event.target.options[
-                                    event.target.selectedIndex
-                                ];
-
-                            try {
-                                await saveKeybinds(
-                                    parseInt(selectedOption.dataset.key),
-                                    selectedOption.value.toLowerCase(),
-                                    "NextChar"
-                                );
-                            } catch (error) {
-                                console.error(
-                                    "Error saving keybind or fetching keys:",
-                                    error
-                                );
-                            }
-                        }}
-                    >
-                        {keycodes.map((key) => (
-                            <option
-                                key={key.Code}
-                                value={key.Name}
-                                data-key={key.Code}
-                                className="dropdown-option"
-                            >
-                                {key.Name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-            </div>
+            )}
         </div>
     );
 }

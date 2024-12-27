@@ -14,6 +14,10 @@ export function ActivatePreviousChar() {
   return window['go']['main']['App']['ActivatePreviousChar']();
 }
 
+export function CharSelectedEvent(arg1) {
+  return window['go']['main']['App']['CharSelectedEvent'](arg1);
+}
+
 export function CreateConfigSection(arg1, arg2) {
   return window['go']['main']['App']['CreateConfigSection'](arg1, arg2);
 }

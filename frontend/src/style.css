@@ -6,6 +6,8 @@ html {
 
 body {
     margin: 0;
+    min-width: 1px;
+    min-height: 100vh;
     color: white;
     font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI",
         "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
@@ -18,9 +20,4 @@ body {
     font-weight: 400;
     src: local(""),
         url("assets/fonts/nunito-v16-latin-regular.woff2") format("woff2");
-}
-
-#app {
-    height: 100vh;
-    text-align: center;
 }
