@@ -1,5 +1,8 @@
 # go-organizer
 
+https://github.com/user-attachments/assets/95ea4ec8-2111-443a-8c5a-c8d6caa9f907
+
+
 ![Screenshot 2024-12-27 155148](https://github.com/user-attachments/assets/1a617bf5-6e7b-456b-895b-b7e1eb27a0c3)
 
 
