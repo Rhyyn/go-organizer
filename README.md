@@ -57,4 +57,5 @@ Other functionality:
 
 Knowns Bugs :
 - Mouse buttons seems to have a hard time triggering the window change
+- App has to be started and closed once before being able to use it, this only happens once at the first ever start.
 
