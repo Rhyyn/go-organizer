@@ -1,6 +1,11 @@
 # go-organizer
 
-![Screenshot 2024-11-24 141639](https://github.com/user-attachments/assets/0a6eb79a-9ae0-40e4-9bb6-7c0af7995229)
+![Screenshot 2024-12-27 155148](https://github.com/user-attachments/assets/1a617bf5-6e7b-456b-895b-b7e1eb27a0c3)
+
+
+### Version "Overlay"
+
+![Screenshot 2024-12-27 155155](https://github.com/user-attachments/assets/06567361-8fba-4be0-8e25-81aeea7c00c6)
 
 ## FR (English below)
 
