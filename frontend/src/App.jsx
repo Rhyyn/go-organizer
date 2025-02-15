@@ -356,6 +356,9 @@ function App() {
                             </label>
                         </div>
                     </div>
+                    <div className="individual-keybinds-container">
+                        <label>Individual keybinds</label>
+                    </div>
                     <div className="bottom-container">
                         <label className="dropdown-label">
                             Toggle Organizer :
