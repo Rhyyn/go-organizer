@@ -6,6 +6,8 @@ import {main} from '../models';
 
 export function ActivateAction(arg1:string):Promise<void>;
 
+export function ActivateCharacter(arg1:string):Promise<void>;
+
 export function ActivateNextChar():Promise<void>;
 
 export function ActivatePreviousChar():Promise<void>;
@@ -13,6 +15,8 @@ export function ActivatePreviousChar():Promise<void>;
 export function CharSelectedEvent(arg1:w32.HWND):Promise<void>;
 
 export function CreateConfigSection(arg1:ini.File,arg2:string):Promise<void>;
+
+export function FetchKeybindsFromBack():Promise<{[key: number]: main.Keybinds}>;
 
 export function GetAllKeyBindings():Promise<{[key: number]: main.Keybinds}>;
 
@@ -32,7 +36,11 @@ export function KeybindUpdatedEvent():Promise<void>;
 
 export function PauseHook():Promise<void>;
 
+export function PauseIndividualsHook():Promise<void>;
+
 export function ResumeHook():Promise<void>;
+
+export function ResumeIndividualsHook():Promise<void>;
 
 export function SaveCharacterList(arg1:Array<main.WindowInfo>):Promise<void>;
 
@@ -45,6 +53,8 @@ export function UninstallHook():Promise<void>;
 export function UpdateDofusWindows():Promise<void>;
 
 export function UpdateDofusWindowsOrder(arg1:Array<main.WindowInfo>):Promise<Array<main.WindowInfo>>;
+
+export function UpdateIsIndividualKeybindActive():Promise<void>;
 
 export function UpdateOrganizerRunning():Promise<void>;
 

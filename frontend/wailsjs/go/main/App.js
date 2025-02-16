@@ -6,6 +6,10 @@ export function ActivateAction(arg1) {
   return window['go']['main']['App']['ActivateAction'](arg1);
 }
 
+export function ActivateCharacter(arg1) {
+  return window['go']['main']['App']['ActivateCharacter'](arg1);
+}
+
 export function ActivateNextChar() {
   return window['go']['main']['App']['ActivateNextChar']();
 }
@@ -20,6 +24,10 @@ export function CharSelectedEvent(arg1) {
 
 export function CreateConfigSection(arg1, arg2) {
   return window['go']['main']['App']['CreateConfigSection'](arg1, arg2);
+}
+
+export function FetchKeybindsFromBack() {
+  return window['go']['main']['App']['FetchKeybindsFromBack']();
 }
 
 export function GetAllKeyBindings() {
@@ -58,8 +66,16 @@ export function PauseHook() {
   return window['go']['main']['App']['PauseHook']();
 }
 
+export function PauseIndividualsHook() {
+  return window['go']['main']['App']['PauseIndividualsHook']();
+}
+
 export function ResumeHook() {
   return window['go']['main']['App']['ResumeHook']();
+}
+
+export function ResumeIndividualsHook() {
+  return window['go']['main']['App']['ResumeIndividualsHook']();
 }
 
 export function SaveCharacterList(arg1) {
@@ -84,6 +100,10 @@ export function UpdateDofusWindows() {
 
 export function UpdateDofusWindowsOrder(arg1) {
   return window['go']['main']['App']['UpdateDofusWindowsOrder'](arg1);
+}
+
+export function UpdateIsIndividualKeybindActive() {
+  return window['go']['main']['App']['UpdateIsIndividualKeybindActive']();
 }
 
 export function UpdateOrganizerRunning() {

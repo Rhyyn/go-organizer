@@ -14,11 +14,15 @@ import (
 )
 
 func (a *App) ActivateAction(action string) {
-	switch action {
-	case "NextChar":
-		a.ActivateNextChar()
-	case "PreviousChar":
-		a.ActivatePreviousChar()
+	if len(action) > 0 {
+		switch action {
+		case "NextChar":
+			a.ActivateNextChar()
+		case "PreviousChar":
+			a.ActivatePreviousChar()
+		default:
+			a.ActivateCharacter(action)
+		}
 	}
 }
 
@@ -32,6 +36,14 @@ func (a *App) PauseHook() {
 func (a *App) ResumeHook() {
 	// runtime.LogPrint(a.ctx, "resuming hook")
 	isOrganizerRunning = true
+}
+
+func (a *App) PauseIndividualsHook() {
+	IsIndividualKeybindActive = false
+}
+
+func (a *App) ResumeIndividualsHook() {
+	IsIndividualKeybindActive = true
 }
 
 // InstallHook starts the keyboard hook

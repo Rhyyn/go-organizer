@@ -20,6 +20,10 @@ func (a *App) UpdateOrganizerRunning() {
 	runtime.EventsEmit(a.ctx, "updateOrganizerRunningState", isOrganizerRunning)
 }
 
+func (a *App) UpdateIsIndividualKeybindActive() {
+	runtime.EventsEmit(a.ctx, "isIndividualKeybindActive", IsIndividualKeybindActive)
+}
+
 func (a *App) UpdateDofusWindows() {
 	runtime.EventsEmit(a.ctx, "updatedCharacterOrder", a.DofusWindows)
 }

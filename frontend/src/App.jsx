@@ -22,15 +22,19 @@ import {
     GetKeycodes,
     SaveKeybind,
     GetAllKeyBindings,
+    FetchKeybindsFromBack,
     SaveCharacterList,
     WinActivate,
     SetAlwaysOnTop,
     UpdateTemporaryDofusWindows,
+    ResumeIndividualsHook,
+    PauseIndividualsHook,
 } from "../wailsjs/go/main/App";
 
 function App() {
     const isFirstRun = useRef(true);
     const [isActive, setIsActive] = useState(false);
+    const [isIndividualActive, setIsIndividualActive] = useState(false);
     const [dofusWindows, setDofusWindows] = useState([]);
     const [keycodes, setKeycodes] = useState([]);
 
@@ -153,9 +157,28 @@ function App() {
 
     // Fetch keybinds
     const FetchKeybinds = () => {
-        GetAllKeyBindings().then((result) => {
-            console.log(result);
+        // GetAllKeyBindings().then((result) => {
+        //     console.log(result);
+        //     Object.values(result).map((keybind) => {
+        //         switch (keybind.Action) {
+        //             case "StopOrganizer":
+        //                 setStopOrganizerKey(keybind.KeyName);
+        //                 break;
+        //             case "NextChar":
+        //                 setNextKey(keybind.KeyName);
+        //                 break;
+        //             case "PreviousChar":
+        //                 setPreviousKey(keybind.KeyName);
+        //                 break;
+        //             default:
+        //                 break;
+        //         }
+        //     });
+        // });
+
+        FetchKeybindsFromBack().then((result) => {
             Object.values(result).map((keybind) => {
+                console.log(result);
                 switch (keybind.Action) {
                     case "StopOrganizer":
                         setStopOrganizerKey(keybind.KeyName);
@@ -187,6 +210,16 @@ function App() {
             PauseHook();
         }
         setIsActive(!isActive);
+    };
+
+    const handleIndividualToggle = () => {
+        if (!isIndividualActive) {
+            ResumeIndividualsHook();
+            console.log("clicked");
+        } else {
+            PauseIndividualsHook();
+        }
+        setIsIndividualActive(!isIndividualActive);
     };
 
     // Observer to know when organizer is active or not
@@ -301,6 +334,47 @@ function App() {
                                                 } Icon`}
                                             ></img>
                                         </div>
+                                        <select
+                                            className="individual-dropdown"
+                                            value={previousKey.toLowerCase()}
+                                            onKeyDown={(event) => {
+                                                event.preventDefault();
+                                            }}
+                                            onChange={async (event) => {
+                                                const selectedOption =
+                                                    event.target.options[
+                                                        event.target
+                                                            .selectedIndex
+                                                    ];
+
+                                                try {
+                                                    await saveKeybinds(
+                                                        parseInt(
+                                                            selectedOption
+                                                                .dataset.key
+                                                        ),
+                                                        selectedOption.value.toLowerCase(),
+                                                        window.CharacterName
+                                                    );
+                                                } catch (error) {
+                                                    console.error(
+                                                        "Error saving keybind or fetching keys:",
+                                                        error
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {keycodes.map((key) => (
+                                                <option
+                                                    key={key.Code}
+                                                    value={key.Name.toLowerCase()}
+                                                    data-key={key.Code}
+                                                    className="dropdown-option"
+                                                >
+                                                    {key.Name}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <div className="move-buttons-container">
                                             <button
                                                 title="Move Up"
@@ -346,9 +420,6 @@ function App() {
                             >
                                 Organizer is : {isActive ? "Active" : "Off"}
                                 <input
-                                    className={`custom-checkbox ${
-                                        isActive ? "active" : "paused"
-                                    }`}
                                     type="checkbox"
                                     checked={isActive}
                                     onChange={handleActiveToggle}
@@ -357,7 +428,24 @@ function App() {
                         </div>
                     </div>
                     <div className="individual-keybinds-container">
-                        <label>Individual keybinds</label>
+                        <div className="up-toggle-container">
+                            <label
+                                className={`toggle-label-individual ${
+                                    isIndividualActive ? "active" : "paused"
+                                }`}
+                            >
+                                Individual keybinds are :{" "}
+                                {isIndividualActive ? "Active" : "Off"}
+                                <input
+                                    className={`custom-checkbox-individual ${
+                                        isIndividualActive ? "active" : "paused"
+                                    }`}
+                                    type="checkbox"
+                                    checked={isIndividualActive}
+                                    onChange={handleIndividualToggle}
+                                />
+                            </label>
+                        </div>
                     </div>
                     <div className="bottom-container">
                         <label className="dropdown-label">

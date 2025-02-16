@@ -44,7 +44,7 @@ func (a *App) SaveKeybind(keycode int32, keyname string, keybindName string) (st
 		KeyName: strings.ToUpper(keyname),
 	}
 
-	// runtime.LogPrintf(a.ctx, "Updated Keybinds to : %v", keybindMap)
+	runtime.LogPrintf(a.ctx, "Updated Saved Keybinds to : %v", keybindMap)
 	a.KeybindUpdatedEvent()
 
 	return "sucess", nil
@@ -66,66 +66,99 @@ func (a *App) GetAllKeyBindings() map[int32]Keybinds {
 	}
 
 	// Function to parse the key value
-	parseKey := func(keyName string) (int32, string, error) {
-		// NextChar      = 114,F
-		keyValue := section.Key(keyName).String()
-		if keyValue == "" {
-			err := fmt.Errorf("'%s' key not found", keyName)
-			runtime.LogErrorf(a.ctx, "Error: %v", err) // Log error here
-			return 0, "", err
-		}
+	// parseKey := func(keyName string) (int32, string, error) {
+	// 	// NextChar      = 114,F
+	// 	keyValue := section.Key(keyName).String()
+	// 	if keyValue == "" {
+	// 		err := fmt.Errorf("'%s' key not found", keyName)
+	// 		runtime.LogErrorf(a.ctx, "Error: %v", err) // Log error here
+	// 		return 0, "", err
+	// 	}
+	// 	// 114,F
+	// 	parts := strings.SplitN(keyValue, ",", 2)
+	// 	if len(parts) != 2 {
+	// 		err := fmt.Errorf("invalid key value format for '%s': '%s'", keyName, keyValue)
+	// 		runtime.LogErrorf(a.ctx, "Error: %v", err)
+	// 		return 0, "", err
+	// 	}
+	// 	// keycode = 114
+	// 	keycode, err := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 32)
+	// 	if err != nil {
+	// 		runtime.LogErrorf(a.ctx, "Error parsing keycode '%s': %v", parts[0], err)
+	// 		return 0, "", err
+	// 	}
+	// 	// keyname = F
+	// 	keyname := strings.TrimSpace(parts[1])
+
+	// 	return int32(keycode), keyname, nil
+	// }
+
+	// keybindMap = make(map[int32]Keybinds)
+
+	for _, key := range section.Keys() {
+		fmt.Println(key)
+		keyValue := key.Value()
+
 		// 114,F
 		parts := strings.SplitN(keyValue, ",", 2)
-		if len(parts) != 2 {
-			err := fmt.Errorf("invalid key value format for '%s': '%s'", keyName, keyValue)
-			runtime.LogErrorf(a.ctx, "Error: %v", err)
-			return 0, "", err
-		}
+		// if len(parts) != 2 {
+		// 	err := fmt.Errorf("invalid key value format for '%s': '%s'", key, keyValue)
+		// 	runtime.LogErrorf(a.ctx, "Error: %v", err)
+		// 	return 0, "", err
+		// }
+
 		// keycode = 114
-		keycode, err := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 32)
-		if err != nil {
-			runtime.LogErrorf(a.ctx, "Error parsing keycode '%s': %v", parts[0], err)
-			return 0, "", err
-		}
+		keycode, _ := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 32)
+		// if err != nil {
+		// 	runtime.LogErrorf(a.ctx, "Error parsing keycode '%s': %v", parts[0], err)
+		// 	return 0, "", err
+		// }
 		// keyname = F
 		keyname := strings.TrimSpace(parts[1])
 
-		return int32(keycode), keyname, nil
-	}
+		keybindMap[int32(keycode)] = Keybinds{
+			Action:  key.Name(),
+			KeyName: keyname,
+		}
 
-	keybindMap = make(map[int32]Keybinds)
+		// return int32(keycode), keyname, nil
+	}
 
 	// Get StopOrganizer key
-	stopCode, stopName, err := parseKey("StopOrganizer")
-	if err != nil {
-		return nil
-	}
-	keybindMap[stopCode] = Keybinds{
-		Action:  "StopOrganizer",
-		KeyName: stopName,
-	}
+	// stopCode, stopName, err := parseKey("StopOrganizer")
+	// if err != nil {
+	// 	return nil
+	// }
+	// keybindMap[stopCode] = Keybinds{
+	// 	Action:  "StopOrganizer",
+	// 	KeyName: stopName,
+	// }
 
-	// Get PreviousChar key
-	prevCode, prevName, err := parseKey("PreviousChar")
-	if err != nil {
-		return nil
-	}
-	keybindMap[prevCode] = Keybinds{
-		Action:  "PreviousChar",
-		KeyName: prevName,
-	}
+	// // Get PreviousChar key
+	// prevCode, prevName, err := parseKey("PreviousChar")
+	// if err != nil {
+	// 	return nil
+	// }
+	// keybindMap[prevCode] = Keybinds{
+	// 	Action:  "PreviousChar",
+	// 	KeyName: prevName,
+	// }
 
-	// Get NextChar key
-	nextCode, nextName, err := parseKey("NextChar")
-	if err != nil {
-		return nil
-	}
-	keybindMap[nextCode] = Keybinds{
-		Action:  "NextChar",
-		KeyName: nextName,
-	}
+	// // Get NextChar key
+	// nextCode, nextName, err := parseKey("NextChar")
+	// if err != nil {
+	// 	return nil
+	// }
+	// keybindMap[nextCode] = Keybinds{
+	// 	Action:  "NextChar",
+	// 	KeyName: nextName,
+	// }
 
-	// fmt.Printf("Update keybinds to %v\n", keybindMap)
+	fmt.Printf("Update keybinds to %v\n", keybindMap)
+	return keybindMap
+}
+
+func (a *App) FetchKeybindsFromBack() map[int32]Keybinds {
 	return keybindMap
 }
 

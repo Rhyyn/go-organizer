@@ -52,6 +52,7 @@ var (
 	isAlwaysOnTop                 bool
 	keybindMap                    map[int32]Keybinds
 	isOrganizerRunning            bool
+	IsIndividualKeybindActive     bool
 	isKeyPressed                  map[int32]bool
 	isMousePressed                map[int32]bool
 	configFileMutex               sync.Mutex

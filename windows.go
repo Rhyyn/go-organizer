@@ -112,6 +112,14 @@ func (a *App) UpdateTemporaryDofusWindows(tempChars []WindowInfo) {
 	}
 }
 
+func (a *App) ActivateCharacter(characterName string) {
+	for _, char := range a.DofusWindows {
+		if char.CharacterName == characterName {
+			a.WinActivate(w32.HWND(char.Hwnd))
+		}
+	}
+}
+
 func (a *App) ActivateNextChar() {
 	isDofus, index := a.IsWindowDofus()
 	if isDofus {
