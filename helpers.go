@@ -58,7 +58,6 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 }
 
 func (a *App) ResetKeybinds() {
-	fmt.Println("here")
 	configFile, err, _ := loadINIFile(configFilePath)
 	if err != nil {
 		runtime.LogErrorf(a.ctx, "Error loading config file: %v", err)

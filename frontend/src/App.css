@@ -152,6 +152,7 @@
 
 .btn-reset {
     max-width: 100%;
+    min-width: 80px;
     height: 34px;
     background-color: #686868;
     border: none;
@@ -164,6 +165,7 @@
     transition: transform 0.1s ease, background-color 0.2s ease;
     margin-top: 5px;
     border-radius: 2px;
+    margin: 0 5px;
 }
 
 .btn-reset:active {
@@ -172,6 +174,10 @@
 
 .btn-reset:hover {
     background-color: #15beca;
+}
+
+.modal-p {
+    margin: 5px 0 5px 0;
 }
 
 /* end of menu */

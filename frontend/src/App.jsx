@@ -89,7 +89,7 @@ function App() {
                 result.forEach((element) => {
                     heightToAdd += 45;
                 });
-                WindowSetSize(420, 420 + heightToAdd);
+                WindowSetSize(420, 460 + heightToAdd);
 
                 ///////////
                 setCharListHeight({
@@ -159,6 +159,22 @@ function App() {
         ResetKeybinds().then(() => {
             FetchKeybinds();
         });
+    };
+
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+    const handleResetClick = () => {
+        setShowConfirmModal(true);
+    };
+
+    const confirmReset = () => {
+        FrontResetKeybinds();
+
+        setShowConfirmModal(false);
+    };
+
+    const cancelReset = () => {
+        setShowConfirmModal(false);
     };
 
     // Fetch keybinds
@@ -540,10 +556,31 @@ function App() {
                         </label>
                         <button
                             className="btn-reset"
-                            onClick={() => FrontResetKeybinds()}
+                            onClick={() => handleResetClick()}
                         >
                             Reset Keybinds
                         </button>
+                        {showConfirmModal && (
+                            <div className="modal">
+                                <div className="modal-content">
+                                    <p className="modal-p">
+                                        Are you sure you want to reset keybinds?
+                                    </p>
+                                    <button
+                                        className="btn-reset"
+                                        onClick={confirmReset}
+                                    >
+                                        Yes
+                                    </button>
+                                    <button
+                                        className="btn-reset"
+                                        onClick={cancelReset}
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <footer className="footer" style={{ widows: "1" }}></footer>
                 </div>
