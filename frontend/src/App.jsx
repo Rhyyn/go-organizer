@@ -21,7 +21,7 @@ import {
     ResumeHook,
     GetKeycodes,
     SaveKeybind,
-    GetAllKeyBindings,
+    ResetKeybinds,
     FetchKeybindsFromBack,
     SaveCharacterList,
     WinActivate,
@@ -89,7 +89,7 @@ function App() {
                 result.forEach((element) => {
                     heightToAdd += 45;
                 });
-                WindowSetSize(420, 400 + heightToAdd);
+                WindowSetSize(420, 420 + heightToAdd);
 
                 ///////////
                 setCharListHeight({
@@ -154,11 +154,18 @@ function App() {
     //     FetchKeybinds();
     // })
 
+    const FrontResetKeybinds = () => {
+        console.log("resetting keybinds");
+        ResetKeybinds().then(() => {
+            FetchKeybinds();
+        });
+    };
+
     // Fetch keybinds
     const FetchKeybinds = () => {
         FetchKeybindsFromBack().then((result) => {
             Object.values(result).map((keybind) => {
-                // console.log(result);
+                console.log(result);
                 switch (keybind.Action) {
                     case "StopOrganizer":
                         setStopOrganizerKey(keybind.KeyName);
@@ -531,6 +538,12 @@ function App() {
                                 ))}
                             </select>
                         </label>
+                        <button
+                            className="btn-reset"
+                            onClick={() => FrontResetKeybinds()}
+                        >
+                            Reset Keybinds
+                        </button>
                     </div>
                     <footer className="footer" style={{ widows: "1" }}></footer>
                 </div>

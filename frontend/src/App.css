@@ -150,6 +150,30 @@
     background-color: #15beca;
 }
 
+.btn-reset {
+    max-width: 100%;
+    height: 34px;
+    background-color: #686868;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.1rem;
+    outline: none;
+    flex-basis: 0;
+    flex: 1 1 0px;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+    margin-top: 5px;
+    border-radius: 2px;
+}
+
+.btn-reset:active {
+    transform: scale(0.95);
+}
+
+.btn-reset:hover {
+    background-color: #15beca;
+}
+
 /* end of menu */
 
 .button-to-overlay-mode {

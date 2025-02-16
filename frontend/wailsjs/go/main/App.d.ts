@@ -38,6 +38,8 @@ export function PauseHook():Promise<void>;
 
 export function PauseIndividualsHook():Promise<void>;
 
+export function ResetKeybinds():Promise<void>;
+
 export function ResumeHook():Promise<void>;
 
 export function ResumeIndividualsHook():Promise<void>;

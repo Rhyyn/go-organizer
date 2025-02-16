@@ -57,6 +57,35 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 	return nil
 }
 
+func (a *App) ResetKeybinds() {
+	fmt.Println("here")
+	configFile, err, _ := loadINIFile(configFilePath)
+	if err != nil {
+		runtime.LogErrorf(a.ctx, "Error loading config file: %v", err)
+	}
+
+	section, err := configFile.GetSection("KeyBindings")
+	if err != nil {
+		section = configFile.Section("KeyBindings")
+	}
+	section.Key("StopOrganizer").SetValue("115,F4")
+	section.Key("PreviousChar").SetValue("113,F2")
+	section.Key("NextChar").SetValue("114,F3")
+
+	keybindMap = map[int32]Keybinds{
+		115: {Action: "StopOrganizer", KeyName: "F4"},
+		113: {Action: "PreviousChar", KeyName: "F2"},
+		114: {Action: "NextChar", KeyName: "F3"},
+	}
+
+	fmt.Println(keybindMap)
+
+	err = configFile.SaveTo(filepath.Join(exeDir, "config.ini"))
+	if err != nil {
+		runtime.LogErrorf(a.ctx, "Error saving config file: %v", err)
+	}
+}
+
 // Populate our config.ini Sections and add Default keybinds
 func (a *App) CreateConfigSection(cfg *ini.File, exeDir string) {
 	section, err := cfg.GetSection("KeyBindings")

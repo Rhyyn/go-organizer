@@ -70,6 +70,10 @@ export function PauseIndividualsHook() {
   return window['go']['main']['App']['PauseIndividualsHook']();
 }
 
+export function ResetKeybinds() {
+  return window['go']['main']['App']['ResetKeybinds']();
+}
+
 export function ResumeHook() {
   return window['go']['main']['App']['ResumeHook']();
 }
