@@ -89,7 +89,7 @@ function App() {
                 result.forEach((element) => {
                     heightToAdd += 45;
                 });
-                WindowSetSize(392, 350 + heightToAdd);
+                WindowSetSize(420, 400 + heightToAdd);
 
                 ///////////
                 setCharListHeight({
