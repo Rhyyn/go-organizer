@@ -165,7 +165,7 @@ function App() {
     const FetchKeybinds = () => {
         FetchKeybindsFromBack().then((result) => {
             Object.values(result).map((keybind) => {
-                console.log(result);
+                // console.log(result);
                 switch (keybind.Action) {
                     case "StopOrganizer":
                         setStopOrganizerKey(keybind.KeyName);

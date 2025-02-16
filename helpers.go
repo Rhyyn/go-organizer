@@ -64,10 +64,10 @@ func (a *App) ResetKeybinds() {
 		runtime.LogErrorf(a.ctx, "Error loading config file: %v", err)
 	}
 
-	section, err := configFile.GetSection("KeyBindings")
-	if err != nil {
-		section = configFile.Section("KeyBindings")
-	}
+	configFile.DeleteSection("KeyBindings")
+
+	section := configFile.Section("KeyBindings")
+
 	section.Key("StopOrganizer").SetValue("115,F4")
 	section.Key("PreviousChar").SetValue("113,F2")
 	section.Key("NextChar").SetValue("114,F3")
@@ -78,7 +78,13 @@ func (a *App) ResetKeybinds() {
 		114: {Action: "NextChar", KeyName: "F3"},
 	}
 
-	fmt.Println(keybindMap)
+	for i := range a.DofusWindows {
+		char := &a.DofusWindows[i] // reference
+
+		char.Keybind = ""
+	}
+
+	a.UpdateDofusWindows()
 
 	err = configFile.SaveTo(filepath.Join(exeDir, "config.ini"))
 	if err != nil {
