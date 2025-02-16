@@ -113,8 +113,7 @@ function App() {
     // TODO: Do this auto on fetch
     // ask back to load order of saved characters
     async function loadOrder() {
-        console.log("updating order..");
-        console.log(dofusWindows);
+        // console.log("updating order..");
         await UpdateDofusWindowsOrder(dofusWindows)
             .then((result) => {
                 if (result.length != 0) {
@@ -157,28 +156,9 @@ function App() {
 
     // Fetch keybinds
     const FetchKeybinds = () => {
-        // GetAllKeyBindings().then((result) => {
-        //     console.log(result);
-        //     Object.values(result).map((keybind) => {
-        //         switch (keybind.Action) {
-        //             case "StopOrganizer":
-        //                 setStopOrganizerKey(keybind.KeyName);
-        //                 break;
-        //             case "NextChar":
-        //                 setNextKey(keybind.KeyName);
-        //                 break;
-        //             case "PreviousChar":
-        //                 setPreviousKey(keybind.KeyName);
-        //                 break;
-        //             default:
-        //                 break;
-        //         }
-        //     });
-        // });
-
         FetchKeybindsFromBack().then((result) => {
             Object.values(result).map((keybind) => {
-                console.log(result);
+                // console.log(result);
                 switch (keybind.Action) {
                     case "StopOrganizer":
                         setStopOrganizerKey(keybind.KeyName);
@@ -201,6 +181,7 @@ function App() {
         await SaveKeybind(keycode, keyname, keybindName).then(() => {
             FetchKeybinds();
         });
+        await loadOrder();
     }
 
     const handleActiveToggle = () => {
@@ -210,16 +191,6 @@ function App() {
             PauseHook();
         }
         setIsActive(!isActive);
-    };
-
-    const handleIndividualToggle = () => {
-        if (!isIndividualActive) {
-            ResumeIndividualsHook();
-            console.log("clicked");
-        } else {
-            PauseIndividualsHook();
-        }
-        setIsIndividualActive(!isIndividualActive);
     };
 
     // Observer to know when organizer is active or not
@@ -336,7 +307,11 @@ function App() {
                                         </div>
                                         <select
                                             className="individual-dropdown"
-                                            value={previousKey.toLowerCase()}
+                                            value={
+                                                window.Keybind
+                                                    ? window.Keybind.toLowerCase()
+                                                    : ""
+                                            }
                                             onKeyDown={(event) => {
                                                 event.preventDefault();
                                             }}
@@ -364,6 +339,7 @@ function App() {
                                                 }
                                             }}
                                         >
+                                            <option value=""></option>
                                             {keycodes.map((key) => (
                                                 <option
                                                     key={key.Code}
@@ -423,26 +399,6 @@ function App() {
                                     type="checkbox"
                                     checked={isActive}
                                     onChange={handleActiveToggle}
-                                />
-                            </label>
-                        </div>
-                    </div>
-                    <div className="individual-keybinds-container">
-                        <div className="up-toggle-container">
-                            <label
-                                className={`toggle-label-individual ${
-                                    isIndividualActive ? "active" : "paused"
-                                }`}
-                            >
-                                Individual keybinds are :{" "}
-                                {isIndividualActive ? "Active" : "Off"}
-                                <input
-                                    className={`custom-checkbox-individual ${
-                                        isIndividualActive ? "active" : "paused"
-                                    }`}
-                                    type="checkbox"
-                                    checked={isIndividualActive}
-                                    onChange={handleIndividualToggle}
                                 />
                             </label>
                         </div>

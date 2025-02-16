@@ -35,6 +35,7 @@ type WindowInfo struct {
 	CharacterName string
 	Class         string
 	Order         int
+	Keybind       string
 }
 
 type Keybinds struct {

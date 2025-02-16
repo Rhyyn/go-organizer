@@ -179,21 +179,22 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	processName, _ := w32.GetClassName(hwnd)
 	exeName, _ := GetExecutableName(hwnd)
 
-	// We check if exe is Dofus, this runs once, should not cause any issues
-	// TODO: Make it do we can cycle through Dofus with no title
-	// but not save it
 	if exeName == "Dofus.exe" && processName == "UnityWndClass" {
 		characterName, class := parseTitleComponents(title)
 
-		// TODO :
-		// need to re order it self before append
-		// if characters.ini has any
+		keybind := ""
+		for _, key := range keybindMap {
+			if key.Action == characterName {
+				keybind = key.KeyName
+			}
+		}
 
 		a.DofusWindows = append(a.DofusWindows, WindowInfo{
 			Title:         title,
 			Hwnd:          uint64(hwnd),
 			CharacterName: characterName,
 			Class:         class,
+			Keybind:       keybind,
 		})
 
 		// runtime.LogPrintf(ctx, "Processed window: %s ", title)
@@ -205,6 +206,16 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 func (a *App) UpdateDofusWindowsOrder(loggedInCharacters []WindowInfo) ([]WindowInfo, error) {
 	if len(loggedInCharacters) == 0 {
 		return a.DofusWindows, nil
+	}
+
+	for i := range loggedInCharacters {
+		char := &loggedInCharacters[i] // reference
+
+		for _, key := range keybindMap {
+			if key.Action == char.CharacterName {
+				char.Keybind = key.KeyName
+			}
+		}
 	}
 
 	// no error handling because i dont have time

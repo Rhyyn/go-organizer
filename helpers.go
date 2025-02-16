@@ -34,9 +34,16 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 
 	section := iniFile.Section("Characters")
 	// runtime.LogPrintf(a.ctx, "Saving character list: %v\n", dofusWindows)
+
 	for _, window := range dofusWindows {
 		if !strings.Contains(window.Title, "Dofus") {
-			section.Key(window.CharacterName).SetValue("")
+			for _, key := range keybindMap {
+				if key.Action == window.CharacterName {
+					section.Key(window.CharacterName).SetValue(key.Action)
+				} else {
+					section.Key(window.CharacterName).SetValue("")
+				}
+			}
 		}
 	}
 
