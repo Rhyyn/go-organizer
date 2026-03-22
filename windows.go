@@ -151,7 +151,7 @@ func (a *App) refreshAndUpdateCharacterList(exists bool) {
 		return EnumWindowsCallback(a.ctx, hwnd, a)
 	})
 
-	// runtime.LogPrintf(a.ctx, "Looped through Windows and inside refreshAndUpdateCharacterList with exists : %t", exists)
+	runtime.LogPrintf(a.ctx, "Looped through Windows and inside refreshAndUpdateCharacterList with exists : %t", exists)
 
 	// This stinks
 	if !exists {
@@ -170,6 +170,20 @@ func EnumWindowsCallback(ctx context.Context, hwnd w32.HWND, a *App) bool {
 	title := w32.GetWindowText(hwnd)
 	processName, _ := w32.GetClassName(hwnd)
 	exeName, _ := GetExecutableName(hwnd)
+
+
+	if exeName == "Dofus Retro.exe" && processName == "Chrome_WidgetWin_1" {
+		// runtime.LogPrintf(a.ctx, "title : %s",title)
+		// runtime.LogPrintf(a.ctx, "processName : %s",processName)
+		// runtime.LogPrint(a.ctx, "----")
+		characterName, class := parseTitleComponents(title)
+		a.DofusWindows = append(a.DofusWindows, WindowInfo{
+			Title:         title,
+			Hwnd:          uint64(hwnd),
+			CharacterName: characterName,
+			Class:         class,
+		})
+	}
 
 	// We check if exe is Dofus, this runs once, should not cause any issues
 	// TODO: Make it do we can cycle through Dofus with no title
