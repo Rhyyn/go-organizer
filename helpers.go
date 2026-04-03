@@ -28,6 +28,7 @@ func (a *App) loadCharacterList(cfg *ini.File) ([]string, error) {
 // this deletes our section and re create it
 // idk if its a good idea but it works :)
 func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
+	// runtime.LogPrintf(a.ctx, "dofusWindows : %v\n", dofusWindows)
 	iniFile, _, _ := loadINIFile(charactersFilePath)
 
 	iniFile.DeleteSection("Characters")
@@ -35,7 +36,17 @@ func (a *App) SaveCharacterList(dofusWindows []WindowInfo) error {
 	section := iniFile.Section("Characters")
 	// runtime.LogPrintf(a.ctx, "Saving character list: %v\n", dofusWindows)
 	for _, window := range dofusWindows {
+		// runtime.LogPrintf(a.ctx, "window : %v\n", window)
 		if !strings.Contains(window.Title, "Dofus") {
+			// runtime.LogPrintf(a.ctx, "window.CharacterName : %v\n", window.CharacterName)
+			section.Key(window.CharacterName).SetValue("")
+		}
+	}
+
+	for _, window := range dofusWindows {
+		// runtime.LogPrintf(a.ctx, "window : %v\n", window)
+		if strings.Contains(window.Title, "Dofus Retro") {
+			// runtime.LogPrintf(a.ctx, "window.CharacterName : %v\n", window.CharacterName)
 			section.Key(window.CharacterName).SetValue("")
 		}
 	}

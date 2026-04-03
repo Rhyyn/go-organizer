@@ -70,7 +70,7 @@ function App() {
                 ([code, name]) => ({
                     Code: parseInt(code, 10),
                     Name: name,
-                })
+                }),
             );
             const sortedList = keycodesArray.sort((a, b) => a.Code - b.Code);
             setKeycodes(sortedList);
@@ -375,15 +375,15 @@ function App() {
                                     try {
                                         await saveKeybinds(
                                             parseInt(
-                                                selectedOption.dataset.key
+                                                selectedOption.dataset.key,
                                             ),
                                             selectedOption.value.toLowerCase(),
-                                            "StopOrganizer"
+                                            "StopOrganizer",
                                         );
                                     } catch (error) {
                                         console.error(
                                             "Error saving keybind or fetching keys:",
-                                            error
+                                            error,
                                         );
                                     }
                                 }}
@@ -417,15 +417,15 @@ function App() {
                                     try {
                                         await saveKeybinds(
                                             parseInt(
-                                                selectedOption.dataset.key
+                                                selectedOption.dataset.key,
                                             ),
                                             selectedOption.value.toLowerCase(),
-                                            "PreviousChar"
+                                            "PreviousChar",
                                         );
                                     } catch (error) {
                                         console.error(
                                             "Error saving keybind or fetching keys:",
-                                            error
+                                            error,
                                         );
                                     }
                                 }}
@@ -459,15 +459,15 @@ function App() {
                                     try {
                                         await saveKeybinds(
                                             parseInt(
-                                                selectedOption.dataset.key
+                                                selectedOption.dataset.key,
                                             ),
                                             selectedOption.value.toLowerCase(),
-                                            "NextChar"
+                                            "NextChar",
                                         );
                                     } catch (error) {
                                         console.error(
                                             "Error saving keybind or fetching keys:",
-                                            error
+                                            error,
                                         );
                                     }
                                 }}
